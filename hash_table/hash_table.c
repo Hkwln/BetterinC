@@ -42,7 +42,8 @@ void hash_insert(ht *table, ht_entry newentry) {
     if (table->entries[index].key == NULL ||
         table->entries[index].key == TOMBSTONE) {
       // deep copy of newentry
-      table->entries[index].key = strdup(newentry.key);
+      char *duplicated_key = strdup(newentry.key);
+      table->entries[index].key = duplicated_key;
       table->entries[index].value = newentry.value;
       table->length += 1;
 
