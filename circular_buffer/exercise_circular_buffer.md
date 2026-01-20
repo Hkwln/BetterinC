@@ -79,10 +79,10 @@ void cb_destroy(CircularBuffer* cb);
 bool cb_write(CircularBuffer* cb, uint8_t byte);
 ```
 
-- Check if full: `if (cb->count >= cb->capacity) return false;`
-- Write to buffer: `cb->buffer[cb->write_pos] = byte;`
-- Advance write position: `cb->write_pos = (cb->write_pos + 1) % cb->capacity;`
-- Increment count: `cb->count++;`
+- Check if full:
+- Write to buffer:
+- Advance write position:
+- Increment count:
 - Return true
 
 **The modulo `%` makes it circular!**
@@ -93,10 +93,10 @@ bool cb_write(CircularBuffer* cb, uint8_t byte);
 bool cb_read(CircularBuffer* cb, uint8_t* byte);
 ```
 
-- Check if empty: `if (cb->count == 0) return false;`
-- Read from buffer: `*byte = cb->buffer[cb->read_pos];`
-- Advance read position: `cb->read_pos = (cb->read_pos + 1) % cb->capacity;`
-- Decrement count: `cb->count--;`
+- Check if empty:
+- Read from buffer:
+- Advance read position:
+- Decrement count:
 - Return true
 
 ---
@@ -111,8 +111,8 @@ size_t cb_write_bulk(CircularBuffer* cb, const uint8_t* data, size_t size);
 
 **Algorithm:**
 
-1. Calculate available space: `space = cb->capacity - cb->count`
-2. Limit write: `to_write = (size < space) ? size : space`
+1. Calculate available space:
+2. Limit write:
 3. Split into two parts if wrap-around occurs:
 
    ```
