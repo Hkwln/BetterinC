@@ -9,7 +9,6 @@ int main(int argc, char **argv) {
 
   // Test insertions
   printf("\n--- Testing insertions ---\n");
-
   int *val1 = malloc(sizeof(int));
   *val1 = 42;
   hash_insert(table, (ht_entry){"name", val1});

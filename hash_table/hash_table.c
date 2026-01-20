@@ -5,7 +5,7 @@
 #define STANDART_GRÖẞE 3
 // use a tombstone instead of NULL on char*
 #define TOMBSTONE (char *)-1
-
+/* XXX: Hash table should own all memory managment, not the user in testing.c*/
 ht *hash_create(void) {
   ht *table = malloc(sizeof(ht));
   table->capacity = STANDART_GRÖẞE;
@@ -16,17 +16,20 @@ ht *hash_create(void) {
 void hash_destroy(ht *table) {
   // iteriere über alle slots
   for (int i = 0; i < table->capacity; i++) {
-
+    // frage: muss ich dann überhaupt dieses if statement haben wenn ich die
+    // remaining values auch freen will?
     if (table->entries[i].key != NULL && table->entries[i].key != TOMBSTONE) {
 
       free((void *)table->entries[i].key);
+      free(table->entries[i].value);
+      table->entries[i].value = NULL;
       table->entries[i].key = TOMBSTONE;
     }
   }
   free(table->entries);
   free(table);
 }
-// locale funktion: aktuell temporär
+// locale funktion
 unsigned long hash(const char *str) {
   unsigned long hash = 2166136261u;
   while (*str) {
@@ -67,6 +70,9 @@ void hash_insert(ht *table, ht_entry newentry) {
     table->capacity *= 2;
     table->entries = calloc(table->capacity, sizeof(ht_entry));
     for (int n = 0; n < old_capacity; n++) {
+      // check if they are NULL or TOMBSTONE
+      if (old_entries[n].key == NULL || old_entries[n].key == TOMBSTONE)
+        continue;
       size_t newhash = hash(old_entries[n].key) % table->capacity;
       for (int i = 0; i < table->capacity; i++) {
         size_t newnewhash = (newhash + i) % table->capacity;
@@ -74,9 +80,7 @@ void hash_insert(ht *table, ht_entry newentry) {
             table->entries[newnewhash].key == TOMBSTONE) {
           // here strdup is not necesarry because table->entries[n].key is
           // already strdup copied string
-
-          if (old_entries[newnewhash].key == NULL ||
-              old_entries[newnewhash].key == TOMBSTONE)
+          if (old_entries[n].key == NULL || old_entries[n].key == TOMBSTONE)
             continue;
           table->entries[newnewhash].key = old_entries[n].key;
           table->entries[newnewhash].value = old_entries[n].value;
@@ -90,8 +94,6 @@ void hash_insert(ht *table, ht_entry newentry) {
     hash_insert(table, newentry);
   }
 }
-/* TODO: Was passiert wenn es den hash schon gibt, ich das error handling
- * betrieben habe und jetzt den falschen hash mir hole durch hash_Get?*/
 void *hash_get(ht *table, const char *key) {
   size_t index = hash(key) % table->capacity;
   for (int i = 0; i < table->capacity; i++) {
@@ -106,7 +108,6 @@ void *hash_get(ht *table, const char *key) {
   }
   return NULL;
 }
-/* TODO: und hier genauso was ist wenn ich den falschen key lösche*/
 void hash_delete(ht *table, const char *key) {
   size_t index = hash(key) % table->capacity;
   for (int i = 0; i < table->capacity; i++) {
@@ -115,6 +116,7 @@ void hash_delete(ht *table, const char *key) {
          table->entries[newindex].key != TOMBSTONE) &&
         strcmp(table->entries[newindex].key, key) == 0) {
       free(table->entries[newindex].value);
+      free((void *)table->entries[newindex].key);
       table->entries[newindex].value = NULL;
       table->entries[newindex].key = TOMBSTONE;
       table->length--;
@@ -122,9 +124,6 @@ void hash_delete(ht *table, const char *key) {
     }
   }
 }
-/* TODO: finish:
- * print the whole hash table
- * what format?*/
 void hash_print(ht *table) {
   printf("So this is what you current hash table look like \n");
   printf("capacity: %zu         usage: %zu \n", table->capacity, table->length);
