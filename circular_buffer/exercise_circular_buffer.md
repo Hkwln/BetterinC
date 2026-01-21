@@ -152,9 +152,9 @@ size_t cb_read_bulk(CircularBuffer* cb, uint8_t* dest, size_t size);
 bool cb_peek(CircularBuffer* cb, uint8_t* byte, size_t offset);
 ```
 
-- Read byte at `(read_pos + offset) % capacity`
+- Read byte
 - Don't modify read_pos or count
-- Check: `if (offset >= cb->count) return false;`
+- Check:`if (offset >= cb->count) return false;`
 
 ### Function 8: Available Space
 
@@ -162,15 +162,11 @@ bool cb_peek(CircularBuffer* cb, uint8_t* byte, size_t offset);
 size_t cb_space_available(CircularBuffer* cb);
 ```
 
-- Return `cb->capacity - cb->count`
-
 ### Function 9: Available Data
 
 ```c
 size_t cb_data_available(CircularBuffer* cb);
 ```
-
-- Return `cb->count`
 
 ### Function 10: Clear Buffer
 
@@ -178,7 +174,6 @@ size_t cb_data_available(CircularBuffer* cb);
 void cb_clear(CircularBuffer* cb);
 ```
 
-- Set `read_pos = write_pos = count = 0`
 - Don't need to clear actual data!
 
 ---
@@ -191,21 +186,6 @@ Sometimes you want newest data to overwrite oldest data when full (like dmesg).
 
 ```c
 void cb_write_overwrite(CircularBuffer* cb, uint8_t byte);
-```
-
-```c
-if (cb->count >= cb->capacity) {
-    // Full: overwrite oldest data
-    cb->buffer[cb->write_pos] = byte;
-    cb->write_pos = (cb->write_pos + 1) % cb->capacity;
-    cb->read_pos = (cb->read_pos + 1) % cb->capacity;  // Skip oldest
-    // count stays at capacity
-} else {
-    // Normal write
-    cb->buffer[cb->write_pos] = byte;
-    cb->write_pos = (cb->write_pos + 1) % cb->capacity;
-    cb->count++;
-}
 ```
 
 ---

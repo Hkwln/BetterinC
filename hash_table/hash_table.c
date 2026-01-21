@@ -5,7 +5,8 @@
 #define STANDART_GRÖẞE 3
 // use a tombstone instead of NULL on char*
 #define TOMBSTONE (char *)-1
-/* XXX: Hash table should own all memory managment, not the user in testing.c*/
+
+// creates a new hash table:
 ht *hash_create(void) {
   ht *table = malloc(sizeof(ht));
   table->capacity = STANDART_GRÖẞE;
@@ -13,6 +14,7 @@ ht *hash_create(void) {
   table->length = 0;
   return table;
 }
+// destroys the whole hash table
 void hash_destroy(ht *table) {
   // iteriere über alle slots
   for (int i = 0; i < table->capacity; i++) {
@@ -29,7 +31,7 @@ void hash_destroy(ht *table) {
   free(table->entries);
   free(table);
 }
-// locale funktion
+// hash function
 unsigned long hash(const char *str) {
   unsigned long hash = 2166136261u;
   while (*str) {
@@ -38,6 +40,7 @@ unsigned long hash(const char *str) {
   }
   return hash;
 }
+// insert newentry to hashtable
 void hash_insert(ht *table, ht_entry newentry) {
   if (table->length < table->capacity) {
     size_t index = hash(newentry.key) % table->capacity;
@@ -64,13 +67,12 @@ void hash_insert(ht *table, ht_entry newentry) {
       }
     }
   } else {
-    // rezize the array with calloc
+    // rezize the array:
     ht_entry *old_entries = table->entries;
     size_t old_capacity = table->capacity;
     table->capacity *= 2;
     table->entries = calloc(table->capacity, sizeof(ht_entry));
     for (int n = 0; n < old_capacity; n++) {
-      // check if they are NULL or TOMBSTONE
       if (old_entries[n].key == NULL || old_entries[n].key == TOMBSTONE)
         continue;
       size_t newhash = hash(old_entries[n].key) % table->capacity;
@@ -78,22 +80,19 @@ void hash_insert(ht *table, ht_entry newentry) {
         size_t newnewhash = (newhash + i) % table->capacity;
         if (table->entries[newnewhash].key == NULL ||
             table->entries[newnewhash].key == TOMBSTONE) {
-          // here strdup is not necesarry because table->entries[n].key is
-          // already strdup copied string
           if (old_entries[n].key == NULL || old_entries[n].key == TOMBSTONE)
             continue;
           table->entries[newnewhash].key = old_entries[n].key;
           table->entries[newnewhash].value = old_entries[n].value;
-          // length does not change during rehashing
           break;
         }
       }
+      free(old_entries);
+      hash_insert(table, newentry);
     }
-    // freeing old memory:
-    free(old_entries);
-    hash_insert(table, newentry);
   }
 }
+// search for the value given the key returning a pointer to it (the value)
 void *hash_get(ht *table, const char *key) {
   size_t index = hash(key) % table->capacity;
   for (int i = 0; i < table->capacity; i++) {
@@ -108,6 +107,7 @@ void *hash_get(ht *table, const char *key) {
   }
   return NULL;
 }
+// delete the value given the key
 void hash_delete(ht *table, const char *key) {
   size_t index = hash(key) % table->capacity;
   for (int i = 0; i < table->capacity; i++) {
@@ -124,6 +124,7 @@ void hash_delete(ht *table, const char *key) {
     }
   }
 }
+// printing of the whole hash table
 void hash_print(ht *table) {
   printf("So this is what you current hash table look like \n");
   printf("capacity: %zu         usage: %zu \n", table->capacity, table->length);
