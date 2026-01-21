@@ -28,6 +28,7 @@ typedef struct {
 ```
 
 **Key concepts:**
+
 - `length` tracks actual string size
 - `capacity` is always ≥ length + 1 (for null terminator)
 - When buffer is full, grow it (similar to dynamic arrays)
@@ -71,6 +72,7 @@ bool sb_append(StringBuilder *sb, const char *str);
 - Return `true` on success, `false` on allocation failure
 
 **Growth logic:**
+
 ```c
 while (sb->capacity <= new_length) {
     sb->capacity *= 2;  // Double the capacity
@@ -193,6 +195,7 @@ Write a `main()` function that demonstrates:
 6. **Memory test:** Verify no leaks with Valgrind
 
 **Example test:**
+
 ```c
 StringBuilder *sb = sb_create(0);
 sb_append(sb, "Hello");
@@ -249,7 +252,7 @@ sb_destroy(sb);
 ⚠️ **Off-by-one errors:** Remember capacity must fit `length + 1` for null terminator  
 ⚠️ **Forgetting realloc can move buffer:** Don't keep old pointers to buffer contents  
 ⚠️ **Not checking realloc failure:** Always check if `realloc()` returns NULL  
-⚠️ **String operations after take_string:** Buffer is gone after ownership transfer  
+⚠️ **String operations after take_string:** Buffer is gone after ownership transfer
 
 ---
 
