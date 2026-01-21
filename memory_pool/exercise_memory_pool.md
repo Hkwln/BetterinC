@@ -11,12 +11,14 @@
 A **memory pool** (object pool) pre-allocates a fixed number of objects and reuses them, avoiding repeated malloc/free calls. Unlike your arena allocator (which never frees individual objects), a pool tracks which objects are free and which are in use.
 
 **Used in:**
+
 - Game engines (bullet pools, particle systems)
 - Database connection pools
 - Network servers (request/response object reuse)
 - Real-time systems (predictable performance, no malloc in hot path)
 
 **Key difference from arena:**
+
 - Arena: Allocate sequentially, reset all at once
 - Pool: Allocate/free individual objects, reuse slots
 
@@ -48,11 +50,13 @@ for (int i = 0; i < 1000; i++) {
 You'll implement **both** and compare performance:
 
 **Strategy A: Bitmap Tracking** (Uses your bitmap knowledge!)
+
 - Track free slots with bits: 0=used, 1=free
 - Fast allocation: Find first set bit (ffs instruction)
 - Cache-friendly metadata
 
 **Strategy B: Free List** (Classic approach)
+
 - Embed a linked list in the free objects themselves
 - O(1) allocation from list head
 - Zero metadata overhead
@@ -74,6 +78,7 @@ typedef struct {
 ```
 
 **Memory layout:**
+
 ```
 [OBJ][OBJ][OBJ][OBJ]...  <- Actual objects
 Bitmap: 11010110...      <- Free status
@@ -98,6 +103,7 @@ typedef struct {
 ```
 
 **Memory layout (initially):**
+
 ```
 [NODE→][NODE→][NODE→][NULL]
   ↑
@@ -117,6 +123,7 @@ BitmapPool* bitmap_pool_create(size_t object_size, size_t capacity);
 ```
 
 **Steps:**
+
 1. Allocate memory for pool struct
 2. Allocate memory block: `capacity * object_size` bytes
 3. Calculate bitmap size: `(capacity + 7) / 8` bytes
@@ -133,8 +140,10 @@ void* bitmap_pool_alloc(BitmapPool* pool);
 ```
 
 **Algorithm:**
+
 1. Check if pool is full: `if (allocated_count == capacity) return NULL;`
 2. Find first free object:
+
    ```c
    for (size_t byte_idx = 0; byte_idx < bitmap_bytes; byte_idx++) {
        if (pool->free_bitmap[byte_idx] != 0) {
@@ -163,11 +172,14 @@ void bitmap_pool_free(BitmapPool* pool, void* ptr);
 ```
 
 **Steps:**
+
 1. Calculate object index:
+
    ```c
    size_t offset = (uint8_t*)ptr - (uint8_t*)pool->memory;
    size_t object_idx = offset / pool->object_size;
    ```
+
 2. Validate: Check `offset % object_size == 0` (detect invalid pointers!)
 3. Check if already free (double-free detection!)
 4. Set bit to 1 (mark as free)
@@ -218,6 +230,7 @@ void* freelist_pool_alloc(FreeListPool* pool);
 ```
 
 **Beautifully simple:**
+
 ```c
 if (pool->free_list == NULL) return NULL;
 
@@ -293,6 +306,7 @@ No locks needed!
 ### Feature 4: Defragmentation (HARD)
 
 Compact allocated objects to reduce memory footprint. Requires:
+
 - Track all pointers to objects
 - Move objects in memory
 - Update all references
@@ -357,6 +371,7 @@ Bitmap vs Free List: Which has better cache locality?
 ### Build a Particle System Simulator
 
 **Requirements:**
+
 - 10,000 particles
 - Each particle: position (x,y), velocity (vx,vy), lifetime
 - Every frame: Move particles, expire old ones, spawn new ones
@@ -381,6 +396,7 @@ void update_particles(FreeListPool* pool) {
 **Challenge:** How do you iterate only allocated objects?
 
 **Solution:** Keep a separate array of active pointers:
+
 ```c
 Particle* active[10000];
 size_t active_count;
@@ -402,7 +418,7 @@ typedef struct {
 } NamedPool;
 
 void pool_log(NamedPool* p, const char* msg) {
-    sb_append_format(p->debug_log, "[%s] %s\n", 
+    sb_append_format(p->debug_log, "[%s] %s\n",
                      sb_get_string(p->name), msg);
 }
 ```
@@ -464,9 +480,9 @@ This teaches you how **data structures compose**!
 ## Common Pitfalls
 
 ⚠️ **Forgetting to initialize free list** - All objects must be linked!  
-⚠️ **object_size < sizeof(void*)** - Free list won't fit!  
+⚠️ **object_size < sizeof(void\*)** - Free list won't fit!  
 ⚠️ **Not checking for NULL** - Always validate pool_alloc return  
-⚠️ **Pointer arithmetic errors** - uint8_t* for byte offsets!  
+⚠️ **Pointer arithmetic errors** - uint8_t\* for byte offsets!  
 ⚠️ **Bitmap byte order** - Bit 0 is LSB, bit 7 is MSB  
 ⚠️ **Cache effects** - Sequential access is faster than random
 
@@ -513,6 +529,7 @@ memory_pool/
 ```
 
 In README.md, answer:
+
 - Which implementation is faster? Why?
 - Which uses less memory? Why?
 - When would you use each?
