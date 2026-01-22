@@ -15,3 +15,5 @@ FreeListPool *freelist_pool_create(size_t object_size, size_t capacity);
 void *freelist_pool_alloc(FreeListPool *pool);
 void freelist_pool_free(FreeListPool *pool, void *ptr);
 void freelist_pool_destroy(FreeListPool *pool);
+// TODO:
+void fbool_print_stats(FreeListPool *pool);
