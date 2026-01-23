@@ -13,17 +13,21 @@ int main(int argc, char **argv) {
   info.lines = 0;
   info.chars = 0;
   info.numberoffiles = 0;
+  int haderrors = 0;
   for (int i = 1; i < argc; i++) {
     char *filename = argv[i];
     // check of file actually exist
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
-      fprintf(stderr, "no such file or directory");
-      return ENOENT;
+      fprintf(stderr, " %i : %s \n", errno, strerror(errno));
+      perror(filename);
+      haderrors++;
       continue; // skip to next loop
     }
+    errno = 0;
     info.numberoffiles++;
     char mystring[100];
+    // XXX: difference fgets and fgetc?
     while (fgets(mystring, 100, file)) {
       info.lines++;
       for (int b = 0; b < strlen(mystring); b++) {
@@ -32,11 +36,14 @@ int main(int argc, char **argv) {
       }
     }
     // count which chars are full and which are not
-
-    fclose(file);
+    if (ferror(file))
+      fprintf(stderr, "%i : %s\n", errno, strerror(errno));
+    if (fclose(file) == EOF)
+      fprintf(stderr, "%i : %s\n", errno, strerror(errno));
   }
   fprintf(stdout, "number of chars: %zu\n", info.chars);
   printf("number of lines: %zu \n", info.lines);
   printf("number of files %zu\n", info.numberoffiles);
-  return 1;
+
+  return (haderrors > 0);
 }

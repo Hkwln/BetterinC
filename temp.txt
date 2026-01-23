@@ -1,9 +1,0 @@
-    // Optimized: Scan bytes, use CPU instruction
-     for (size_t byte_idx = 0; byte_idx < bitmap_bytes; byte_idx++) {
-         uint8_t byte = pool->bm->data[byte_idx];
-         if (byte != 0xFF) {  // Found a free bit (assuming 1=used)
-             int bit_idx = __builtin_ffs(~byte) - 1;  // Find first 0-bit
-             freeslot = byte_idx * 8 + bit_idx;
-             break;
-         }
-     }
