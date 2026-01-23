@@ -6,7 +6,6 @@
 #include <string.h>
 bool debug = 1;
 // info: if bit = 0 free if bit = 1 in use;
-//  FIXME: missing NULL check bei malloc und calloc
 BitmapPool *bitmap_pool_create(size_t object_size, size_t capacity) {
   BitmapPool *bmp = malloc(sizeof(BitmapPool));
   if (bmp == NULL) {
@@ -73,7 +72,6 @@ void bitmap_pool_free(BitmapPool *pool, void *ptr) {
   pool->poolstats.total_frees++;
 }
 void bitmap_pool_defragment(BitmapPool *pool) {
-
   // scan for 0 in between 1 in the bitmap
   for (int i = 0; i < pool->capacity; i++) {
     if (!bitmap_get_pixel(pool->bm, i, 0)) {

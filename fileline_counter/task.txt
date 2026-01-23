@@ -1,0 +1,33 @@
+   Task: Build a File Line Counter with Error Handling
+
+   Create a program that:
+
+     - Takes multiple filenames as command-line arguments
+     - For each file, counts and prints the number of lines
+     - Handles all errors properly (file not found, permission denied, read errors)
+     - Logs errors to stderr with meaningful messages including the program name
+     - Uses standard errno codes and prints human-readable error messages
+     - Exits with appropriate exit codes (0 for success, 1 if any file failed)
+     - Flushes output at appropriate times
+     - Checks for stream errors after operations
+
+   Example run:
+
+     ./linecount file1.txt file2.txt nonexistent.txt
+
+   Expected behavior:
+
+     - Print line counts to stdout for successful files
+     - Print errors to stderr for failed files
+     - Use ferror() to detect read problems
+     - Return proper exit code based on overall success/failure
+
+   Additional things you should know:
+
+     - perror() and strerror(): Functions to convert errno to human-readable messages
+     - Buffer management: When mixing stdout/stderr, consider when buffering matters
+     - FILE operations*: fopen(), fclose(), fgets() or getc() for reading
+     - Exit codes convention: 0 = success, non-zero = failure (typically 1 for general errors)
+     - argc validation: Always check if argc >= 2 before accessing argv[1]
+
+   Start coding! Focus on proper error checking at every step.
