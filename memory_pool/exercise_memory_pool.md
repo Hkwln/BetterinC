@@ -385,11 +385,11 @@ typedef struct {
 } Particle;
 
 void update_particles(FreeListPool* pool) {
-    // Iterate all allocated particles
-    // Move them: p->x += p->vx; p->y += p->vy;
-    // Decrease lifetime
-    // Free expired particles
-    // Spawn new particles if under limit
+// Iterate all allocated particles
+// Move them: p->x += p->vx; p->y += p->vy;
+// Decrease lifetime
+// Free expired particles
+// Spawn new particles if under limit
 }
 ```
 
