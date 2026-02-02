@@ -5,6 +5,14 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+/*Funtkioniert folgender test wurde mit python im terminal gemacht während
+ server im anderen terminal lief:
+ * python3 -c "
+     import socket
+     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+     s.sendto(b'Test123', ('127.0.0.1', 8888))
+     print(s.recvfrom(1024))
+     "*/
 /* ERSTELLT SOCKET, BINDET IHN, GIBT DEN SOCKET FILE DESCRIPOR ZURÜCK*/
 int create_udp_socket(char *port) {
 
@@ -47,10 +55,15 @@ void server_loop(int socketfd) {
       fprintf(stderr, " %d : %s \n", errno, strerror(errno));
       exit(1);
     }
-    buf[bytes_received] = '\0';
+    ((char *)buf)[bytes_received] = '\0';
     printf("received  %zu bytes: %s \n", bytes_received, (char *)buf);
     sendto(socketfd, buf, bytes_received, 0, (struct sockaddr *)&sender,
            sender_len);
   }
   free(buf);
+}
+int main(int argc, char **argv) {
+  int server_socket = create_udp_socket("8888");
+  server_loop(server_socket);
+  return 0;
 }

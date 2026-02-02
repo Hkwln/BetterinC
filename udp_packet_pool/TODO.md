@@ -53,7 +53,7 @@
 - [ ] Echo works correctly
 - [ ] No memory leaks (`valgrind --leak-check=full ./server`)
 
----
+## DONE
 
 ## Phase 3: Network Communication ⏱️ 2-3 hours
 
@@ -272,9 +272,7 @@ typedef struct {
 
 (Use this space to track challenges, solutions, and insights as you build)
 
--
-
----
+- ***
 
 ## Time Tracking
 
@@ -287,5 +285,5 @@ typedef struct {
 - **Phase 7 (Polish):** \_\_\_ hours
 - **Total:** \_\_\_ hours
 
-**Start Date:** ****\_\_\_****
-**End Date:** ****\_\_\_****
+**Start Date:** \***\*\_\_\_\*\***
+**End Date:** \***\*\_\_\_\*\***
