@@ -99,10 +99,10 @@ typedef struct {
 
 ### Integrate Pool
 
-- [ ] Create pool at server startup: `freelist_pool_create(sizeof(PacketBuffer), 1000)`
-- [ ] Replace malloc with `freelist_pool_alloc(pool)`
-- [ ] Replace free with `freelist_pool_free(pool, buf)`
-- [ ] Test that echo still works
+- [y] Create pool at server startup: `freelist_pool_create(sizeof(PacketBuffer), 1000)`
+- [y] Replace malloc with `freelist_pool_alloc(pool)`
+- [y] Replace free with `freelist_pool_free(pool, buf)`
+- [y] Test that echo still works
 - [ ] Print pool stats every 1000 packets
 
 ---

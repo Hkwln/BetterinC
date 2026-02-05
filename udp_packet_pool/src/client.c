@@ -37,7 +37,6 @@ int main(int argc, char **argv) {
     return 0;
   }
   // receive the echo message from the server
-  // TODO: implement a timer if server is unreachable
   char buf[strlen(message) + 1];
   ssize_t bytes_received = recvfrom(socketfd, buf, sizeof(buf), 0,
                                     (struct sockaddr *)&send, &sender_len);
