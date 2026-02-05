@@ -1,31 +1,34 @@
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-// TIME: 30 min
+// TIME: 30 min +27 min
 // TODO: schau dir noch RGB565 an
-
+struct rgb888 {
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+};
 /* Packs the uint64 memory in a uint8_t portions and returns them
  * returns an array of 8 uint8_t if it works
  * returns -1 if fails*/
-uint8_t *pack(uint64_t bit) {
-  int size = sizeof(bit) / sizeof(uint8_t);
+uint16_t rgb888_to_rgb565(struct rgb888 bit) {
   // XXX: WO Free()?
-  uint8_t *packet_bits = malloc(size * sizeof(uint8_t));
-  for (int i = 0; i < size; i++) {
-    printf("%d,  ", i);
-    // Take the first 8 bits and store them in ;
-    packet_bits[i] = (uint8_t)(bit >> 8 * i);
-  }
-  printf("\n");
-  // FIXME: fix this mess
-  if (packet_bits == 0) {
-    return (uint8_t *)-1;
-  } else {
-    return packet_bits;
-  }
+  uint16_t rgb565 = 0;
+  // first we do red:
+  uint8_t r = bit.r >> 3;
+  printf(" %d", r);
+  // Green:
+  uint8_t g = bit.g >> 2;
+  uint8_t b = bit.b >> 3;
+  return rgb565;
 }
 int main() {
-  uint64_t bit = 0x1234;
-  printf("%d \n", pack(bit)[0]);
+  struct rgb888 rgb;
+  rgb.r = 10;
+  rgb.g = 20;
+  rgb.b = 30;
+  uint16_t rgb565 = rgb888_to_rgb565(rgb);
+
+  printf("%d\n", rgb565);
+  // expect 2212
   return 0;
 }
