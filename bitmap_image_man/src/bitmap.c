@@ -40,6 +40,16 @@ bool bitmap_get_pixel(Bitmap *bmp, uint32_t x, uint32_t y) {
   int16_t bit_offset = bit_index % 8;
   return (bmp->data[byte_index] >> bit_offset) & 1;
 }
+// TODO: implement buffer instead of printing everything, use one printf call
+void print_bitmap(Bitmap *bmp) {
+  for (int h = 0; h < bmp->height; h++) {
+    for (int w = 0; w < bmp->width; w++) {
+      bool pixel = bitmap_get_pixel(bmp, w, h);
+      printf("%c", pixel ? '#' : '.');
+    }
+    printf("\n");
+  }
+}
 // test if this works
 void bitmap_save_ascii(Bitmap *bmp, const char *filename) {
   FILE *savedfile;

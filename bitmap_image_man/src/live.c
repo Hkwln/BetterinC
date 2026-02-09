@@ -5,6 +5,9 @@
  * A live cell with more than three live neighbors dies (overpopulation).
  * A dead cell with exactly three live neighbors becomes alive (reproduction).
  */
+// TODO:ziel: switche langsam zu ly von der mitte aus nach außen, game of live
+// oberfläche wird quasi immer kleiner , also in tty, nicht im code,
+// performance improvements: only track living cells with a type
 #include "bitmap.h"
 #include "data.h"
 #include <stdbool.h>
@@ -13,106 +16,108 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-typedef struct {
-  unsigned int x;
-  unsigned int y;
-  bool spawn;
-} should_spawn;
-// Zählen Diagonale pixel auch als nachbarn?
-int nachbarn(Bitmap *live, uint32_t i, uint32_t n) {
-  int nachbarn = 0;
-#if 0
-  // TODO: nutze schleife mit offset array anstatt so viele iff schleifen:
-    //not yet working
-  int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-  int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
-  for (int c = 0; c < 8; c++) {
-    if (dx[c] + i < live->height && dx[c] + i > 0 && dy[c] + i < live->height &&
-        dy[c] + i > 0 && bitmap_get_pixel(live, i + dx[c], n + dx[c]))
-      nachbarn++;
-  }
-#endif
-#if 1
-  if (i + 1 < live->height && bitmap_get_pixel(live, i + 1, n))
-    nachbarn++;
-  if (i > 0 && bitmap_get_pixel(live, i - 1, n))
-    nachbarn++;
-  if (n + 1 < live->width && bitmap_get_pixel(live, i, n + 1))
-    nachbarn++;
-  if (n > 0 && bitmap_get_pixel(live, i, n - 1))
-    nachbarn++;
-  if (n > 0 && i + 1 < live->height && bitmap_get_pixel(live, i + 1, n - 1))
-    nachbarn++;
-  if (n + 1 < live->width && i + 1 < live->height &&
-      bitmap_get_pixel(live, i + 1, n + 1))
-    nachbarn++;
-  if (n > 0 && i > 0 && bitmap_get_pixel(live, i - 1, n - 1))
-    nachbarn++;
-  if (n + 1 < live->width && i > 0 && bitmap_get_pixel(live, i - 1, n + 1))
-    nachbarn++;
-#endif
-  return nachbarn;
-}
-
-void print_bitmap(Bitmap *bmp) {
-  for (int h = 0; h < bmp->height; h++) {
-    for (int w = 0; w < bmp->width; w++) {
-      bool pixel = bitmap_get_pixel(bmp, w, h);
-      printf("%c", pixel ? '#' : '.');
-    }
-    printf("\n");
-  }
-}
-// XXX: vllt lasse den user die göße und die schnelligkeit bestimmen?
-int main(int argc, char **argv) {
-  Bitmap *live = bitmap_create(32, 32);
-  srand(time(NULL));
-  int ninitial_pixel = rand() % (live->height << 4);
-  for (int i = 0; i < ninitial_pixel; i++) {
+/* Spawns new pixels in the bitmap*/
+void spawn(size_t count, Bitmap *live) {
+  for (int i = 0; i < count; i++) {
     int randomx = (rand() % live->height - 2) + 2;
     int randomy = (rand() % live->width - 2) + 2;
     bitmap_set_pixel(live, randomx, randomy, 1);
   }
-  size_t epoch = 500;
-  should_spawn spawn[live->width * live->height];
+}
+/*Checks and returnshow many neighbors the current pixel has;*/
+int getnachbarn(Bitmap *live, uint32_t i, uint32_t n, int dx[], int dy[]) {
+  int nachbarn = 0;
+  for (int c = 0; c < 8; c++) {
+    if (dx[c] + i < live->height && dx[c] + i >= 0 && dy[c] + n < live->width &&
+        dy[c] + n >= 0 && bitmap_get_pixel(live, i + dx[c], n + dy[c]))
+      nachbarn++;
+  }
+  return nachbarn;
+}
+// checks for repeating pattern  returns true if it repeates
+bool isrepeating(Bitmap *live, Bitmap *live2) {
+  for (int i = 0; i < live->width; i++) {
+    for (int n = 0; n < live->height; n++) {
+      if (bitmap_get_pixel(live, i, n) != bitmap_get_pixel(live2, i, n))
+        return 0;
+    }
+  }
+  return 1;
+}
+// conway game of live pixel updating rule
+//  b = changes
+void loop(Bitmap *live, Bitmap *live2, size_t *b, int dx[], int dy[]) {
+  for (int i = 0; i < live->height; i++) {
+    for (int n = 0; n < live->width; n++) {
+      bool pixel = bitmap_get_pixel(live, i, n);
+      int nach = getnachbarn(live, i, n, dx, dy);
+      if (pixel == 1 && (nach < 2 || nach > 3)) {
+        bitmap_set_pixel(live2, i, n, 0);
+        (*b)++;
+      } else if (nach == 3 && pixel == 0) {
+        bitmap_set_pixel(live2, i, n, 1);
+        (*b)++;
+      } else if (pixel == 1 && (nach == 2 || nach == 3)) {
+        bitmap_set_pixel(live2, i, n, 1);
+      } else {
+        bitmap_set_pixel(live2, i, n, 0);
+      }
+    }
+  }
+}
+// XXX: vllt lasse den user die göße und die schnelligkeit bestimmen?
+int main(int argc, char **argv) {
+  uint32_t width = 40;
+  uint32_t height = 40;
+  Bitmap *live = bitmap_create(width, height);
+  Bitmap *live2 = bitmap_create(width, height);
+  Bitmap *live3 = bitmap_create(width, height);
+  srand(time(NULL));
+  int ninitial_pixel = rand() % (live->height << 4);
+  spawn(ninitial_pixel, live);
 
-  system("clear");
+  int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+  int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+  printf("\033[H");
   printf("Generation 0:\n");
   print_bitmap(live);
   usleep(100000);
-
-  for (int e = 0; e < epoch; e++) {
-    int b = 0;
-    for (int i = 0; i < live->height; i++) {
-      for (int n = 0; n < live->width; n++) {
-        bool pixel = bitmap_get_pixel(live, i, n);
-        int nach = nachbarn(live, i, n);
-        if (pixel == 1 && (nach < 2 || nach > 3)) {
-          spawn[b].x = i;
-          spawn[b].y = n;
-          spawn[b].spawn = 0;
-          b++;
-        } else if (nach == 3 && pixel == 0) {
-          spawn[b].x = i;
-          spawn[b].y = n;
-          spawn[b].spawn = 1;
-          b++;
-        }
+  // epoch loop
+  for (int e = 0;; e++) {
+    // hide cursor:
+    printf("\033[?25l");
+    size_t changes = 0;
+    // define which live i will use:
+    printf("\033[H");
+    printf("Generation %d:\n", e + 1);
+    int vari = (e % 3) + 1;
+    if (vari == 1) {
+      loop(live, live2, &changes, dx, dy);
+      print_bitmap(live2);
+      // check for repeating pattern
+    } else if (vari == 2) {
+      loop(live2, live3, &changes, dx, dy);
+      print_bitmap(live3);
+    } else if (vari == 3) {
+      loop(live3, live, &changes, dx, dy);
+      print_bitmap(live);
+    } else
+      printf("error");
+    bool repeating = isrepeating(live, live3);
+    if (changes == 0 || repeating) {
+      if (vari == 1) {
+        spawn(live->width, live2);
+      } else if (vari == 2) {
+        spawn(live->width, live3);
+      } else if (vari == 3) {
+        spawn(live->width, live);
       }
     }
-    // setting pixels
-    if (b == 0) {
-      exit(0);
-    }
-    for (int t = 0; t < b; t++) {
-      bitmap_set_pixel(live, spawn[t].x, spawn[t].y, spawn[t].spawn);
-    }
-
-    system("clear");
-    printf("Generation %d:\n", e + 1);
-    print_bitmap(live);
     usleep(100000);
   }
+  printf("\033[?25h");
   bitmap_destroy(live);
+  bitmap_destroy(live2);
+  bitmap_destroy(live3);
   return 0;
 }
