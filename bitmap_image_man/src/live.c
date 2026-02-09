@@ -22,7 +22,13 @@ typedef struct {
 int nachbarn(Bitmap *live, uint32_t i, uint32_t n) {
   // TODO: nutze schleife mit offset array anstatt so viele iff schleifen:
   // nt dx[] = {-1,0,1,-1,1,-1,0,1}; int dy[] = {-1,-1,-1,0,0,1,1,1};
+
   int nachbarn = 0;
+#if 0
+    for (int i = 0; i < 8;i++){
+        
+    }
+#endif
   if (i + 1 < live->height && bitmap_get_pixel(live, i + 1, n))
     nachbarn++;
   if (i > 0 && bitmap_get_pixel(live, i - 1, n))
