@@ -20,15 +20,19 @@ typedef struct {
 } should_spawn;
 // Zählen Diagonale pixel auch als nachbarn?
 int nachbarn(Bitmap *live, uint32_t i, uint32_t n) {
-  // TODO: nutze schleife mit offset array anstatt so viele iff schleifen:
-  // nt dx[] = {-1,0,1,-1,1,-1,0,1}; int dy[] = {-1,-1,-1,0,0,1,1,1};
-
   int nachbarn = 0;
 #if 0
-    for (int i = 0; i < 8;i++){
-        
-    }
+  // TODO: nutze schleife mit offset array anstatt so viele iff schleifen:
+    //not yet working
+  int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+  int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+  for (int c = 0; c < 8; c++) {
+    if (dx[c] + i < live->height && dx[c] + i > 0 && dy[c] + i < live->height &&
+        dy[c] + i > 0 && bitmap_get_pixel(live, i + dx[c], n + dx[c]))
+      nachbarn++;
+  }
 #endif
+#if 1
   if (i + 1 < live->height && bitmap_get_pixel(live, i + 1, n))
     nachbarn++;
   if (i > 0 && bitmap_get_pixel(live, i - 1, n))
@@ -46,7 +50,7 @@ int nachbarn(Bitmap *live, uint32_t i, uint32_t n) {
     nachbarn++;
   if (n + 1 < live->width && i > 0 && bitmap_get_pixel(live, i - 1, n + 1))
     nachbarn++;
-
+#endif
   return nachbarn;
 }
 
@@ -75,7 +79,7 @@ int main(int argc, char **argv) {
   system("clear");
   printf("Generation 0:\n");
   print_bitmap(live);
-  usleep(50000);
+  usleep(100000);
 
   for (int e = 0; e < epoch; e++) {
     int b = 0;
@@ -107,7 +111,7 @@ int main(int argc, char **argv) {
     system("clear");
     printf("Generation %d:\n", e + 1);
     print_bitmap(live);
-    usleep(50000);
+    usleep(100000);
   }
   bitmap_destroy(live);
   return 0;
