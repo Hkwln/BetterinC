@@ -50,6 +50,7 @@ void loop(Bitmap *live, Bitmap *live2, size_t *b, int dx[], int dy[]) {
   for (int i = 0; i < live->height; i++) {
     for (int n = 0; n < live->width; n++) {
       bool pixel = bitmap_get_pixel(live, i, n);
+      // set_active(active, randomx, randomy, dx, dy);
       int nach = getnachbarn(live, i, n, dx, dy);
       if (pixel == 1 && (nach < 2 || nach > 3)) {
         bitmap_set_pixel(live2, i, n, 0);
@@ -67,8 +68,10 @@ void loop(Bitmap *live, Bitmap *live2, size_t *b, int dx[], int dy[]) {
 }
 // XXX: vllt lasse den user die göße und die schnelligkeit bestimmen?
 int main(int argc, char **argv) {
-  uint32_t width = 40;
-  uint32_t height = 40;
+  uint32_t width = 20;
+  uint32_t height = 20;
+  int dx[] = {-1, 0, 1, -1, 1, -1, 0, 0, 1, 1, 1};
+  int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
   Bitmap *live = bitmap_create(width, height);
   Bitmap *live2 = bitmap_create(width, height);
   Bitmap *live3 = bitmap_create(width, height);
@@ -76,20 +79,38 @@ int main(int argc, char **argv) {
   int ninitial_pixel = rand() % (live->height << 4);
   spawn(ninitial_pixel, live);
 
-  int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-  int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+  struct timespec start, end;
+  clock_gettime(CLOCK_MONOTONIC, &start);
+
   printf("\033[H");
   printf("Generation 0:\n");
   print_bitmap(live);
-  usleep(100000);
-  // epoch loop
+  //  usleep(100000);
+  //   epoch loop
+  int max_epochs = 100000;
   for (int e = 0;; e++) {
     // hide cursor:
     printf("\033[?25l");
     size_t changes = 0;
+
     // define which live i will use:
     printf("\033[H");
-    printf("Generation %d:\n", e + 1);
+    printf("Generation %d/%d ", e + 1, max_epochs);
+
+    // Progress bar
+    int bar_width = 30;
+    float progress = (float)(e + 1) / max_epochs;
+    int filled = (int)(progress * bar_width);
+    printf("[");
+    for (int i = 0; i < bar_width; i++) {
+      if (i < filled)
+        printf("=");
+      else if (i == filled)
+        printf(">");
+      else
+        printf(" ");
+    }
+    printf("] %.1f%%\n", progress * 100);
     int vari = (e % 3) + 1;
     if (vari == 1) {
       loop(live, live2, &changes, dx, dy);
@@ -103,6 +124,7 @@ int main(int argc, char **argv) {
       print_bitmap(live);
     } else
       printf("error");
+    fflush(stdout);
     bool repeating = isrepeating(live, live3);
     if (changes == 0 || repeating) {
       if (vari == 1) {
@@ -113,7 +135,17 @@ int main(int argc, char **argv) {
         spawn(live->width, live);
       }
     }
-    usleep(100000);
+    if (e == max_epochs) {
+      clock_gettime(CLOCK_MONOTONIC, &end);
+      double elapsed =
+          (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+      printf("\nCompleted %d epochs in %.3f seconds (%.2f epochs/sec)\n", e,
+             elapsed, e / elapsed);
+      printf("\033[?25h");
+      exit(0);
+    }
+    fflush(stdout);
+    // usleep(100000);
   }
   printf("\033[?25h");
   bitmap_destroy(live);
