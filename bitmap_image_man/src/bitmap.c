@@ -48,7 +48,7 @@ void print_bitmap(Bitmap *bmp) {
   int idx = 0;
   for (int h = 0; h < bmp->height; h++) {
     for (int w = 0; w < bmp->width; w++) {
-      buf[idx++] = bitmap_get_pixel(bmp, h, w) ? '*' : ' ';
+      buf[idx++] = bitmap_get_pixel(bmp, w, h) ? '*' : ' ';  // FIX: w, h statt h, w!
     }
     buf[idx++] = '\n';
   }
@@ -66,6 +66,132 @@ void print_bitmap(Bitmap *bmp) {
     printf("\n");
   }
 #endif
+}
+
+// Print bitmap MIT Box-Overlay im Buffer (mit Unicode Box-Zeichen)
+void print_bitmap_with_box(Bitmap *bmp, void *box_ptr) {
+  if (!box_ptr) {
+    print_bitmap(bmp);
+    return;
+  }
+  
+  // Forward declaration aus draw.h
+  typedef struct {
+    int x, y;
+    int width, height;
+    int progress;
+    bool complete;
+    int *draw_order;
+    int total_pixels;
+    int drawn_pixels;
+  } BoxAnimation;
+  
+  BoxAnimation *box = (BoxAnimation*)box_ptr;
+  
+  // Größerer Buffer für Unicode (3 bytes pro Unicode-Zeichen)
+  char *buf = malloc((bmp->width * 3 + 1) * bmp->height + 10);
+  int idx = 0;
+  
+  for (int h = 0; h < bmp->height; h++) {
+    for (int w = 0; w < bmp->width; w++) {
+      bool is_game = bitmap_get_pixel(bmp, w, h);
+      bool is_box = false;
+      int box_type = 0; // 0=none, 1=horizontal, 2=vertical, 3=corner
+      
+      // Check ob Box-Pixel (nur wenn nicht complete)
+      if (!box->complete) {
+        int rel_x = w - box->x;
+        int rel_y = h - box->y;
+        
+        // Ist Position im Box-Bereich?
+        if (w >= box->x && w < box->x + box->width && 
+            h >= box->y && h < box->y + box->height) {
+          
+          // Check welcher Teil der Box
+          bool is_top = (h == box->y);
+          bool is_bottom = (h == box->y + box->height - 1);
+          bool is_left = (w == box->x);
+          bool is_right = (w == box->x + box->width - 1);
+          
+          if (is_top || is_bottom || is_left || is_right) {
+            // Check ob dieses Pixel bereits gezeichnet wurde
+            int encoded = rel_x + rel_y * 1000;
+            for (int i = 0; i < box->drawn_pixels; i++) {
+              if (box->draw_order[i] == encoded) {
+                is_box = true;
+                
+                // Bestimme Box-Typ für Unicode-Zeichen
+                if ((is_top || is_bottom) && !is_left && !is_right) {
+                  box_type = 1; // horizontal ─
+                } else if ((is_left || is_right) && !is_top && !is_bottom) {
+                  box_type = 2; // vertical │
+                } else {
+                  box_type = 3; // corner (vereinfacht)
+                }
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      // Zeichne Zeichen
+      if (is_box) {
+        // Unicode Box-Zeichen (UTF-8 kodiert)
+        if (box_type == 1) {
+          // ─ (U+2500)
+          buf[idx++] = 0xE2;
+          buf[idx++] = 0x94;
+          buf[idx++] = 0x80;
+        } else if (box_type == 2) {
+          // │ (U+2502)
+          buf[idx++] = 0xE2;
+          buf[idx++] = 0x94;
+          buf[idx++] = 0x82;
+        } else if (box_type == 3) {
+          // Ecken - bestimme welche
+          int rel_x = w - box->x;
+          int rel_y = h - box->y;
+          
+          if (rel_x == 0 && rel_y == 0) {
+            // ┌ Oben links (U+250C)
+            buf[idx++] = 0xE2;
+            buf[idx++] = 0x94;
+            buf[idx++] = 0x8C;
+          } else if (rel_x == box->width - 1 && rel_y == 0) {
+            // ┐ Oben rechts (U+2510)
+            buf[idx++] = 0xE2;
+            buf[idx++] = 0x94;
+            buf[idx++] = 0x90;
+          } else if (rel_x == 0 && rel_y == box->height - 1) {
+            // └ Unten links (U+2514)
+            buf[idx++] = 0xE2;
+            buf[idx++] = 0x94;
+            buf[idx++] = 0x94;
+          } else if (rel_x == box->width - 1 && rel_y == box->height - 1) {
+            // ┘ Unten rechts (U+2518)
+            buf[idx++] = 0xE2;
+            buf[idx++] = 0x94;
+            buf[idx++] = 0x98;
+          } else {
+            // Fallback
+            buf[idx++] = '+';
+          }
+        } else {
+          buf[idx++] = '+';
+        }
+      } else if (is_game) {
+        buf[idx++] = '*';
+      } else {
+        buf[idx++] = ' ';
+      }
+    }
+    buf[idx++] = '\n';
+  }
+  buf[idx++] = '\0';
+  
+  printf("%s \n", buf);
+  free(buf);
 }
 
 // test if this works

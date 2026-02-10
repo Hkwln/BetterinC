@@ -1,0 +1,10 @@
+[Plymouth Theme]
+Name= Minimal start
+Description= This start animation which implements conways game of live and a nice transition to ly display manager.
+ModuleName=two-step
+
+[script]
+ImageDir=/usr/share/plymouth/themes/gameoflive/
+ScriptFile=/usr/share/plymouth/themes//script/gameoflive.script
+
+
