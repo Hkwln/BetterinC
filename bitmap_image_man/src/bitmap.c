@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 
 /* TODO:
@@ -40,8 +41,23 @@ bool bitmap_get_pixel(Bitmap *bmp, uint32_t x, uint32_t y) {
   int16_t bit_offset = bit_index % 8;
   return (bmp->data[byte_index] >> bit_offset) & 1;
 }
-// TODO: implement buffer instead of printing everything, use one printf call
 void print_bitmap(Bitmap *bmp) {
+#if 1
+  // mor efficient buffer printing
+  char *buf = malloc(bmp->width * bmp->height + bmp->width + 1);
+  int idx = 0;
+  for (int h = 0; h < bmp->height; h++) {
+    for (int w = 0; w < bmp->width; w++) {
+      buf[idx++] = bitmap_get_pixel(bmp, h, w) ? '*' : ' ';
+    }
+    buf[idx++] = '\n';
+  }
+  buf[idx++] = '\0';
+  printf("%s \n", buf);
+  free(buf);
+
+#endif
+#if 0
   for (int h = 0; h < bmp->height; h++) {
     for (int w = 0; w < bmp->width; w++) {
       bool pixel = bitmap_get_pixel(bmp, w, h);
@@ -49,7 +65,9 @@ void print_bitmap(Bitmap *bmp) {
     }
     printf("\n");
   }
+#endif
 }
+
 // test if this works
 void bitmap_save_ascii(Bitmap *bmp, const char *filename) {
   FILE *savedfile;
