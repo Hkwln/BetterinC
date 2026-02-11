@@ -14,21 +14,22 @@
 #include <unistd.h>
 /* Spawns new pixels - randomly when dead, or near active areas when count is
  * low*/
-void spawn(size_t count, Bitmap *live, Active *active) {
+void spawn(size_t count, Bitmap *live, Active *active, int dx[], int dy[]) {
   for (int i = 0; i < count; i++) {
-    int x, y;
     // If we have active cells, spawn near them (70% chance)
-    if (active->count > 0 && rand() % 100 < 70) {
+    int x, y;
+    if (active->count > 0 && rand() % 100 < 90) {
       int random_idx = rand() % active->count;
       int idx = active->indices[random_idx];
       x = idx % live->width;
       y = idx / live->width;
     } else {
       // Otherwise spawn randomly anywhere
-      x = rand() % live->width;
-      y = rand() % live->height;
+      x = rand() % (live->width);
+      y = rand() % (live->height);
+      bitmap_set_pixel(live, x, y, 1);
+      set_Aactive(active, live, dx, dy);
     }
-    bitmap_set_pixel(live, x, y, 1);
   }
 }
 /*Checks and returnshow many neighbors the current pixel has;*/
@@ -97,25 +98,24 @@ int count_alive(Bitmap *bmp) {
   }
   return count;
 }
-// Dixplay in tty
+// Display in tty
 volatile sig_atomic_t running = 1;
 void sigterm_handler(int sig) { running = 0; }
 int main() {
-  bool manual = false;
 #if !manual
   signal(SIGTERM, sigterm_handler);
   signal(SIGINT, sigterm_handler);
   struct winsize w;
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-  uint32_t width = w.ws_col - 1;  // -1 damit keine Zeile umbricht!
-  uint32_t height = w.ws_row - 3; // -3 für Header + Rand
+  uint32_t width = w.ws_col;  // -1 damit keine Zeile umbricht!
+  uint32_t height = w.ws_row; // -3 für Header + Rand
 #endif
   // init:
 #if manual
   uint32_t width = 20;
   uint32_t height = 20;
 #endif
-  int max_epochs = 500;
+  int max_epochs = 100000;
   int dx[] = {-1, 0, 1, -1, 1, -1, 0, 0};
   int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
   Bitmap *live = bitmap_create(width, height);
@@ -124,8 +124,10 @@ int main() {
   Active *active = initactive(live->height * live->width);
   Active *active2 = initactive(live->height * live->width);
   Active *active3 = initactive(live->height * live->width);
+  char *buf2 = malloc((live->width * 3 + 1) * live->height + 10);
+  buf2[0] = '\0'; // Initialisiere als leerer String
   srand(time(NULL));
-  int ninitial_pixel = rand() % (live->height << 5);
+  int ninitial_pixel = rand() % (live->height << 6);
   // Initial random spawn across entire grid
   for (int i = 0; i < ninitial_pixel; i++) {
     int randomx = rand() % live->width;
@@ -133,15 +135,15 @@ int main() {
     bitmap_set_pixel(live, randomx, randomy, 1);
   }
   set_Aactive(active, live, dx, dy);
-  print_bitmap(live);
+  // print_bitmap(live);
   usleep(100000);
   // start timer:
   struct timespec start, end;
   clock_gettime(CLOCK_MONOTONIC, &start);
 
   // Box-Animation initialisieren (zentriert)
-  int box_width = width / 2;
-  int box_height = height / 2;
+  int box_width = width / 3;
+  int box_height = height / 3;
   int box_x = (width - box_width) / 2;
   int box_y = (height - box_height) / 2;
   BoxAnimation box = box_anim_init(box_x, box_y, box_width, box_height);
@@ -163,19 +165,20 @@ int main() {
     progress_bar(max_epochs, e);
 #endif
     // Actuall Convway epoch loop with printing
+
     int vari = (e % 3) + 1;
     if (vari == 1) {
       changes = loop(live, live2, active, active2, dx, dy);
-      box_anim_draw_frame(&box, live2, 2); // Update box state
-      print_bitmap_with_box(live2, &box);  // Print mit Box-Overlay
+      box_anim_draw_frame(&box, NULL, 1, e);    // Update box state
+      print_bitmap_with_box(live2, &box, buf2); // Print mit Box-Overlay
     } else if (vari == 2) {
       changes = loop(live2, live3, active2, active3, dx, dy);
-      box_anim_draw_frame(&box, live3, 2);
-      print_bitmap_with_box(live3, &box);
+      box_anim_draw_frame(&box, NULL, 2, e);
+      print_bitmap_with_box(live3, &box, buf2);
     } else if (vari == 3) {
       changes = loop(live3, live, active3, active, dx, dy);
-      box_anim_draw_frame(&box, live, 2);
-      print_bitmap_with_box(live, &box);
+      box_anim_draw_frame(&box, NULL, 2, e);
+      print_bitmap_with_box(live, &box, buf2);
     }
     // XXX: only when sleep timer is set to 0 necessary
     // fflush(stdout);
@@ -192,22 +195,22 @@ int main() {
         alive++;
     }
     // Spawn when: no changes (stuck/still life) OR very low alive count
-    uint max_alive = (uint)(((50 + e) * 2) >> e % 10);
-    uint spawn_number = live->width << 3;
-    if (manual) {
-      max_alive = 10;
-      spawn_number = live->width * 2;
-    }
+    uint max_alive = (uint)(((60 - (e) / 2)));
+    uint spawn_number = live->width * 2;
+#if (manual)
+    max_alive = 10;
+    spawn_number = live->width * 2;
+#endif
     if (changes == 0 || alive < max_alive) {
 
       if (vari == 1) {
-        spawn(spawn_number, live2, active2);
+        spawn(spawn_number, live2, active2, dx, dy);
         set_Aactive(active2, live2, dx, dy);
       } else if (vari == 2) {
-        spawn(spawn_number, live3, active3);
+        spawn(spawn_number, live3, active3, dx, dy);
         set_Aactive(active3, live3, dx, dy);
       } else if (vari == 3) {
-        spawn(spawn_number, live, active);
+        spawn(spawn_number, live, active, dx, dy);
         set_Aactive(active, live, dx, dy);
       }
     }
@@ -222,7 +225,7 @@ int main() {
       printf("\033[?25h");
       exit(0);
     }
-    usleep(20000);
+    // usleep(30000);
   }
 #if manual
   printf("\033[?25h");
@@ -239,5 +242,6 @@ int main() {
   destroyactive(active);
   destroyactive(active2);
   destroyactive(active3);
+  free(buf2);
   return 0;
 }

@@ -76,31 +76,32 @@ BoxAnimation box_anim_init(int x, int y, int width, int height) {
 }
 
 // Ein Frame der Box-Animation zeichnen
-bool box_anim_draw_frame(BoxAnimation *anim, Bitmap *bmp, int speed) {
+bool box_anim_draw_frame(BoxAnimation *anim, Bitmap *bmp, int speed, int e) {
   // if (anim->complete) return true;
 
   // Zeichne 'speed' Pixel pro Frame
   int pixels_to_draw = speed;
+  if (e > 200) {
+    for (int i = 0;
+         i < pixels_to_draw && anim->drawn_pixels < anim->total_pixels; i++) {
+      int encoded = anim->draw_order[anim->drawn_pixels];
+      int px = encoded % 1000;
+      int py = encoded / 1000;
 
-  for (int i = 0; i < pixels_to_draw && anim->drawn_pixels < anim->total_pixels;
-       i++) {
-    int encoded = anim->draw_order[anim->drawn_pixels];
-    int px = encoded % 1000;
-    int py = encoded / 1000;
+      int actual_x = anim->x + px;
+      int actual_y = anim->y + py;
+#if 0
+      if (actual_x >= 0 && actual_x < bmp->width && actual_y >= 0 &&
+          actual_y < bmp->height) {
+        bitmap_set_pixel(bmp, actual_x, actual_y, 1);
+      }
+#endif
 
-    int actual_x = anim->x + px;
-    int actual_y = anim->y + py;
-
-    if (actual_x >= 0 && actual_x < bmp->width && actual_y >= 0 &&
-        actual_y < bmp->height) {
-      bitmap_set_pixel(bmp, actual_x, actual_y, 1);
+      anim->drawn_pixels++;
     }
 
-    anim->drawn_pixels++;
+    anim->progress = (anim->drawn_pixels * 100) / anim->total_pixels;
   }
-
-  anim->progress = (anim->drawn_pixels * 100) / anim->total_pixels;
-
   if (anim->drawn_pixels >= anim->total_pixels) {
     anim->complete = true;
     anim->progress = 100;

@@ -8,4 +8,4 @@ bool bitmap_get_pixel(Bitmap *bmp, uint32_t x, uint32_t y);
 void bitmap_save_ascii(Bitmap *bmp, const char *filename);
 void bitmap_save_pbm(Bitmap *bmp, const char *filename);
 void print_bitmap(Bitmap *bmp);
-void print_bitmap_with_box(Bitmap *bmp, void *box_ptr);
+void print_bitmap_with_box(Bitmap *bmp, void *box_ptr, char *buf2);
