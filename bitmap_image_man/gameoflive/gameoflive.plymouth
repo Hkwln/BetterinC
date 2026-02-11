@@ -1,10 +1,11 @@
 [Plymouth Theme]
-Name= Minimal start
-Description= This start animation which implements conways game of live and a nice transition to ly display manager.
-ModuleName=two-step
+Name=Conway Game of Life
+Description=Text-based Conway's Game of Life Boot Animation
+ModuleName=text
 
-[script]
-ImageDir=/usr/share/plymouth/themes/gameoflive/
-ScriptFile=/usr/share/plymouth/themes//script/gameoflive.script
-
-
+[text]
+title=Booting...
+black=0x000000
+white=0xffffff
+brown=0xff4012
+blue=0x988592

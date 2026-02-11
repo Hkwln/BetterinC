@@ -32,80 +32,80 @@ static void shuffle_array(int *array, int n) {
 
 // Box Animation initialisieren
 BoxAnimation box_anim_init(int x, int y, int width, int height) {
-  BoxAnimation anim = {
-    .x = x,
-    .y = y, 
-    .width = width,
-    .height = height,
-    .progress = 0,
-    .complete = false,
-    .drawn_pixels = 0
-  };
-  
+  BoxAnimation anim = {.x = x,
+                       .y = y,
+                       .width = width,
+                       .height = height,
+                       .progress = 0,
+                       .complete = false,
+                       .drawn_pixels = 0};
+
   // Berechne totale Pixel im Rahmen
-  anim.total_pixels = (width * 2) + (height * 2) - 4;  // Ecken nur einmal
-  
+  anim.total_pixels = (width * 2) + (height * 2) - 4; // Ecken nur einmal
+
   // Erstelle Array mit allen Pixel-Positionen
   anim.draw_order = malloc(anim.total_pixels * sizeof(int));
-  
+
   int idx = 0;
-  
+
   // Obere Linie (links nach rechts)
   for (int i = 0; i < width; i++) {
-    anim.draw_order[idx++] = i;  // x-offset, y=0
+    anim.draw_order[idx++] = i; // x-offset, y=0
   }
-  
+
   // Rechte Linie (oben nach unten, ohne obere Ecke)
   for (int i = 1; i < height; i++) {
-    anim.draw_order[idx++] = width - 1 + (i * 1000);  // kodiert als x + y*1000
+    anim.draw_order[idx++] = width - 1 + (i * 1000); // kodiert als x + y*1000
   }
-  
+
   // Untere Linie (rechts nach links, ohne rechte Ecke)
   for (int i = width - 2; i >= 0; i--) {
     anim.draw_order[idx++] = i + ((height - 1) * 1000);
   }
-  
+
   // Linke Linie (unten nach oben, ohne beide Ecken)
   for (int i = height - 2; i > 0; i--) {
     anim.draw_order[idx++] = 0 + (i * 1000);
   }
-  
+
   // Random shuffle
-  srand(time(NULL) + x + y);  // Seed mit Position für Varianz
+  srand(time(NULL) + x + y); // Seed mit Position für Varianz
   shuffle_array(anim.draw_order, anim.total_pixels);
-  
+
   return anim;
 }
 
 // Ein Frame der Box-Animation zeichnen
 bool box_anim_draw_frame(BoxAnimation *anim, Bitmap *bmp, int speed) {
-  if (anim->complete) return true;
-  
+  // if (anim->complete) return true;
+
   // Zeichne 'speed' Pixel pro Frame
   int pixels_to_draw = speed;
-  
-  for (int i = 0; i < pixels_to_draw && anim->drawn_pixels < anim->total_pixels; i++) {
+
+  for (int i = 0; i < pixels_to_draw && anim->drawn_pixels < anim->total_pixels;
+       i++) {
     int encoded = anim->draw_order[anim->drawn_pixels];
     int px = encoded % 1000;
     int py = encoded / 1000;
-    
+
     int actual_x = anim->x + px;
     int actual_y = anim->y + py;
-    
-    if (actual_x >= 0 && actual_x < bmp->width && actual_y >= 0 && actual_y < bmp->height) {
+
+    if (actual_x >= 0 && actual_x < bmp->width && actual_y >= 0 &&
+        actual_y < bmp->height) {
       bitmap_set_pixel(bmp, actual_x, actual_y, 1);
     }
-    
+
     anim->drawn_pixels++;
   }
-  
+
   anim->progress = (anim->drawn_pixels * 100) / anim->total_pixels;
-  
+
   if (anim->drawn_pixels >= anim->total_pixels) {
     anim->complete = true;
     anim->progress = 100;
   }
-  
+
   return anim->complete;
 }
 
@@ -147,7 +147,7 @@ void bitmap_draw_box(Bitmap *bmp, int x, int y, int width, int height) {
     if (x + i < bmp->width && y + height - 1 < bmp->height)
       bitmap_set_pixel(bmp, x + i, y + height - 1, 1);
   }
-  
+
   // Linke und rechte Linie
   for (int i = 0; i < height; i++) {
     if (x < bmp->width && y + i < bmp->height)

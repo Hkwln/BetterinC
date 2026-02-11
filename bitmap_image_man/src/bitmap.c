@@ -48,7 +48,8 @@ void print_bitmap(Bitmap *bmp) {
   int idx = 0;
   for (int h = 0; h < bmp->height; h++) {
     for (int w = 0; w < bmp->width; w++) {
-      buf[idx++] = bitmap_get_pixel(bmp, w, h) ? '*' : ' ';  // FIX: w, h statt h, w!
+      buf[idx++] =
+          bitmap_get_pixel(bmp, w, h) ? '*' : ' '; // FIX: w, h statt h, w!
     }
     buf[idx++] = '\n';
   }
@@ -74,7 +75,7 @@ void print_bitmap_with_box(Bitmap *bmp, void *box_ptr) {
     print_bitmap(bmp);
     return;
   }
-  
+
   // Forward declaration aus draw.h
   typedef struct {
     int x, y;
@@ -85,41 +86,41 @@ void print_bitmap_with_box(Bitmap *bmp, void *box_ptr) {
     int total_pixels;
     int drawn_pixels;
   } BoxAnimation;
-  
-  BoxAnimation *box = (BoxAnimation*)box_ptr;
-  
+
+  BoxAnimation *box = (BoxAnimation *)box_ptr;
+
   // Größerer Buffer für Unicode (3 bytes pro Unicode-Zeichen)
   char *buf = malloc((bmp->width * 3 + 1) * bmp->height + 10);
   int idx = 0;
-  
+
   for (int h = 0; h < bmp->height; h++) {
     for (int w = 0; w < bmp->width; w++) {
       bool is_game = bitmap_get_pixel(bmp, w, h);
       bool is_box = false;
       int box_type = 0; // 0=none, 1=horizontal, 2=vertical, 3=corner
-      
+
       // Check ob Box-Pixel (nur wenn nicht complete)
-      if (!box->complete) {
+      if (true) {
         int rel_x = w - box->x;
         int rel_y = h - box->y;
-        
+
         // Ist Position im Box-Bereich?
-        if (w >= box->x && w < box->x + box->width && 
-            h >= box->y && h < box->y + box->height) {
-          
+        if (w >= box->x && w < box->x + box->width && h >= box->y &&
+            h < box->y + box->height) {
+
           // Check welcher Teil der Box
           bool is_top = (h == box->y);
           bool is_bottom = (h == box->y + box->height - 1);
           bool is_left = (w == box->x);
           bool is_right = (w == box->x + box->width - 1);
-          
+
           if (is_top || is_bottom || is_left || is_right) {
             // Check ob dieses Pixel bereits gezeichnet wurde
             int encoded = rel_x + rel_y * 1000;
             for (int i = 0; i < box->drawn_pixels; i++) {
               if (box->draw_order[i] == encoded) {
                 is_box = true;
-                
+
                 // Bestimme Box-Typ für Unicode-Zeichen
                 if ((is_top || is_bottom) && !is_left && !is_right) {
                   box_type = 1; // horizontal ─
@@ -134,7 +135,7 @@ void print_bitmap_with_box(Bitmap *bmp, void *box_ptr) {
           }
         }
       }
-      
+
       // Zeichne Zeichen
       if (is_box) {
         // Unicode Box-Zeichen (UTF-8 kodiert)
@@ -152,7 +153,7 @@ void print_bitmap_with_box(Bitmap *bmp, void *box_ptr) {
           // Ecken - bestimme welche
           int rel_x = w - box->x;
           int rel_y = h - box->y;
-          
+
           if (rel_x == 0 && rel_y == 0) {
             // ┌ Oben links (U+250C)
             buf[idx++] = 0xE2;
@@ -189,7 +190,6 @@ void print_bitmap_with_box(Bitmap *bmp, void *box_ptr) {
     buf[idx++] = '\n';
   }
   buf[idx++] = '\0';
-  
   printf("%s \n", buf);
   free(buf);
 }

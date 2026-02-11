@@ -1,0 +1,22 @@
+[Unit]
+Description=Conway's Game of Life Boot Animation
+DefaultDependencies=no
+After=systemd-user-sessions.service plymouth-quit.service
+Before=ly.service display-manager.service getty@tty1.service
+Conflicts=getty@tty1.service
+ConditionPathExists=/usr/share/plymouth/themes/gameoflive/live
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/plymouth/themes/gameoflive/live
+StandardInput=tty-force
+StandardOutput=inherit
+StandardError=journal
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+Environment=TERM=linux
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target
