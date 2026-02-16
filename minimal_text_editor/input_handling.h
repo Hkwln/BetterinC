@@ -1,4 +1,4 @@
 #pragma once
 #include <stdbool.h>
-bool exit_comb();
-bool save_comb();
+bool exit_comb(int i);
+bool save_comb(int i);
