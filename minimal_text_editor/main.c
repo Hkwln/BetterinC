@@ -2,84 +2,125 @@
 #include "input_handling.h"
 #include <errno.h>
 #include <ncurses.h> //ncurses includes stdio; unctl stdarg stddef
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// TODO: implement usage of flags
-int write_mode(FILE *file) {
+#define FLAG_SAVED (1 << 0)
+#define FLAG_EXIT (1 << 1)
+#define FLAG_TEMP (1 << 2)
+
+int write_mode(FILE *file, uint8_t *perm) {
   char *buf = malloc(2000 * sizeof(char));
-  buf[0] = '\0';
+  int buf_len = 0;
+  if ((*perm & FLAG_TEMP) == 0) {
+    char c;
+    for (; (c = fgetc(file)) != EOF; buf_len++) {
+      addch(c);
+      refresh();
+      buf[buf_len] = c;
+    }
+  }
+  buf[buf_len] = '\0';
   char *tempbuf = malloc(200 * sizeof(char));
   for (int i = 0; i < 200; i++) {
+    noecho();
     tempbuf[i] = getch();
+    if (delete_comb(tempbuf[i])) {
+      if (i > 0) {
+        i -= 2;
+        int y, x;
+        getyx(stdscr, y, x);
+        if (x > 0) {
+          move(y, x - 1);
+          delch();
+          refresh();
+        }
+      } else {
+        i = -1;
+      }
+      continue;
+    }
+    if (!(exit_comb(tempbuf[i]) || save_comb(tempbuf[i]))) {
+      addch(tempbuf[i]);
+    }
     if (exit_comb(tempbuf[i])) {
-      printw("you have to save the file first bevore exit");
+      *perm = *perm | FLAG_EXIT;
+      if ((*perm & FLAG_SAVED) == 0) {
+        printw("\nyou have to save the file first bevore exit\n");
+      } else {
+        free(buf);
+        free(tempbuf);
+        return 1;
+      }
     }
     if (save_comb(tempbuf[i])) {
       tempbuf[i] = '\0';
       strcat(buf, tempbuf);
+      fseek(file, 0, SEEK_SET);
       fwrite(buf, strlen(buf), 1, file);
       fflush(file);
-      i = -1;
+      *perm = *perm | FLAG_SAVED;
+    }
+    if (((*perm & FLAG_EXIT) != 0) && ((*perm & FLAG_SAVED) != 0)) {
+      free(buf);
+      free(tempbuf);
+      return 1;
     }
   }
+  free(buf);
+  free(tempbuf);
   return 0;
 }
 bool open_editor(char *filename) {
+  uint8_t perm = 0;
   // check if it is a tempfile or a opening file:
   if (filename == NULL) {
+    perm |= FLAG_TEMP;
     FILE *file = fopen("temp.txt", "w+");
     if (file == NULL) {
-      fprintf(stderr, "%s", strerror(errno));
+      printw("%s", strerror(errno));
       return false;
     }
-    write_mode(file);
-    addstr("what is your filename?\n");
+    write_mode(file, &perm);
+    addstr("\nwhat is your filename?\n");
     char *filebuf = malloc(100 * sizeof(char));
-    scanf("%s", filebuf);
+    echo();
+    getnstr(filebuf, 99);
     fclose(file);
-    if (rename("temp.txt", filebuf) == 0)
+    if (rename("temp.txt", filebuf) == 0) {
       printw("successfully saved: %s \n", filebuf);
-    else
-      perror("ERROR renaming file");
+      return true;
+    } else
+      printw("ERROR renaming file\n");
     free(filebuf);
     refresh();
   } else if (filename != NULL) {
     FILE *file = fopen(filename, "r+");
     if (file == NULL) {
-      fprintf(stderr, "%s", strerror(errno));
-      // load previous text:
-      char c;
-      while ((c = fgetc(file)) != EOF) {
-        addch(c);
-        refresh();
-      }
-      return false;
+      printw("%s", strerror(errno));
+      return true;
     }
-    write_mode(file);
+    write_mode(file, &perm);
     fclose(file);
-    return false;
+    return true;
   }
-  return false;
+  return true;
 }
 
 int main(int argc, char **argv) {
   initscr();
-  printw("%d \n", argc);
-  refresh();
   if (argc == 1) {
-    for (; open_editor(NULL);) {
-    }
+    open_editor(NULL);
   } else if (argc == 2) {
-    while (open_editor(argv[1])) {
-      printw("successfully opened: %s\n", argv[1]);
-      refresh();
-    }
+    printw("successfully opened: %s\n", argv[1]);
+    refresh();
+    open_editor(argv[1]);
+
   } else {
-    fprintf(stderr, "error you cannot edit more than one file\n");
+    printw("error you cannot edit more than one file\n");
   }
   refresh();
-  getch();
   endwin();
   return 0;
 }
