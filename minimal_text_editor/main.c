@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #define FLAG_SAVED (1 << 0)
 #define FLAG_EXIT (1 << 1)
 #define FLAG_TEMP (1 << 2)
@@ -29,15 +30,33 @@ int write_mode(FILE *file, uint8_t *perm) {
     if (delete_comb(tempbuf[i])) {
       if (i > 0) {
         i -= 2;
-        int y, x;
-        getyx(stdscr, y, x);
-        if (x > 0) {
-          move(y, x - 1);
-          delch();
-          refresh();
-        }
+      } else if (buf_len > 0) {
+        buf_len--;
+        buf[buf_len] = '\0';
+        i = -1;
       } else {
         i = -1;
+        continue;
+      }
+      int y, x;
+      getyx(stdscr, y, x);
+      if (x > 0) {
+        move(y, x - 1);
+        delch();
+        refresh();
+      } else if (y > 0) {
+        move(y - 1, COLS - 1);
+        int prev_y, prev_x;
+        getyx(stdscr, prev_y, prev_x);
+        while (prev_x > 0 && inch() == ' ') {
+          move(prev_y, prev_x - 1);
+          getyx(stdscr, prev_y, prev_x);
+        }
+        if (inch() != ' ') {
+          move(prev_y, prev_x + 1);
+        }
+        delch();
+        refresh();
       }
       continue;
     }
@@ -48,10 +67,6 @@ int write_mode(FILE *file, uint8_t *perm) {
       *perm = *perm | FLAG_EXIT;
       if ((*perm & FLAG_SAVED) == 0) {
         printw("\nyou have to save the file first bevore exit\n");
-      } else {
-        free(buf);
-        free(tempbuf);
-        return 1;
       }
     }
     if (save_comb(tempbuf[i])) {
@@ -59,6 +74,7 @@ int write_mode(FILE *file, uint8_t *perm) {
       strcat(buf, tempbuf);
       fseek(file, 0, SEEK_SET);
       fwrite(buf, strlen(buf), 1, file);
+      ftruncate(fileno(file), strlen(buf));
       fflush(file);
       *perm = *perm | FLAG_SAVED;
     }
