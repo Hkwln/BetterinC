@@ -1,0 +1,13 @@
+CompileFlags:
+  Add:
+    # Plymouth headers
+    - -I/usr/include/plymouth-1/ply-splash-core
+    - -I/usr/include/plymouth-1/ply-splash-graphics
+    - -I/usr/include/plymouth-1/ply
+    - -I/usr/include/libpng16
+    - -I/usr/include/libevdev-1.0
+    # Your project source
+    - -I/home/goldpaul/Documents/github/BetterinC/bitmap_image_man/src
+    # Standard warnings
+    - -Wall
+    - -Wextra

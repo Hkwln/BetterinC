@@ -1,0 +1,7 @@
+[Plymouth Theme]
+Name=gameoflive
+Description=Conway's Game of Life Boot Splash
+ModuleName=gameoflive
+
+[gameoflive]
+ImageDir=/usr/share/plymouth/themes/gameoflive

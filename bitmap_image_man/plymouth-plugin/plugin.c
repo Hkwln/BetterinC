@@ -1,0 +1,417 @@
+/* Game of Life Plymouth Plugin - Fixed Version */
+
+#include <assert.h>
+#include <errno.h>
+#include <math.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+
+/* Plymouth headers */
+#include "ply-boot-splash-plugin.h"
+#include "ply-buffer.h"
+#include "ply-event-loop.h"
+#include "ply-list.h"
+#include "ply-logger.h"
+#include "ply-pixel-buffer.h"
+#include "ply-pixel-display.h"
+#include "ply-utils.h"
+
+/* Your existing game logic */
+#include "../src/bitmap.h"
+#include "../src/conway.h"
+#include "../src/data.h"
+#include "../src/draw.h"
+
+#ifndef FRAMES_PER_SECOND
+#define FRAMES_PER_SECOND 30
+#endif
+
+#define CELL_SIZE 8 /* Pixels per game cell */
+#define MAX_EPOCHS 500
+
+/* Main plugin structure */
+struct _ply_boot_splash_plugin {
+  ply_event_loop_t *loop;
+  ply_boot_splash_mode_t mode;
+  ply_list_t *views;
+
+  uint32_t is_visible : 1;
+  uint32_t is_animating : 1;
+};
+
+/* Per-display view structure */
+typedef struct {
+  ply_boot_splash_plugin_t *plugin;
+  ply_pixel_display_t *display;
+
+  /* Game of Life state */
+  Bitmap *live;
+  Bitmap *live2;
+  Bitmap *live3;
+  Active *active;
+  Active *active2;
+  Active *active3;
+
+  /* Game parameters */
+  int grid_width;
+  int grid_height;
+  int screen_width;
+  int screen_height;
+  int epoch;
+  int dx[8];
+  int dy[8];
+
+  BoxAnimation box;
+} view_t;
+
+/* Forward declarations */
+ply_boot_splash_plugin_interface_t *ply_boot_splash_plugin_get_interface(void);
+static void detach_from_event_loop(ply_boot_splash_plugin_t *plugin);
+static void on_timeout(view_t *view);
+static void on_draw(void *user_data, ply_pixel_buffer_t *pixel_buffer, int x, int y,
+                    int width, int height, ply_pixel_display_t *display);
+
+/* ==================== VIEW MANAGEMENT ==================== */
+
+static view_t *view_new(ply_boot_splash_plugin_t *plugin,
+                        ply_pixel_display_t *display) {
+  view_t *view;
+
+  view = calloc(1, sizeof(view_t));
+  view->plugin = plugin;
+  view->display = display;
+
+  /* Get screen dimensions */
+  view->screen_width = ply_pixel_display_get_width(display);
+  view->screen_height = ply_pixel_display_get_height(display);
+
+  /* Set up draw handler for this display */
+  ply_pixel_display_set_draw_handler(display, on_draw, view);
+
+  /* Calculate grid dimensions */
+  view->grid_width = view->screen_width / CELL_SIZE;
+  view->grid_height = view->screen_height / CELL_SIZE;
+
+  /* Initialize direction arrays */
+  int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+  int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+  memcpy(view->dx, dx, sizeof(dx));
+  memcpy(view->dy, dy, sizeof(dy));
+
+  /* Create game bitmaps */
+  view->live = bitmap_create(view->grid_width, view->grid_height);
+  view->live2 = bitmap_create(view->grid_width, view->grid_height);
+  view->live3 = bitmap_create(view->grid_width, view->grid_height);
+
+  /* Create active cell trackers */
+  view->active = initactive(view->grid_width * view->grid_height);
+  view->active2 = initactive(view->grid_width * view->grid_height);
+  view->active3 = initactive(view->grid_width * view->grid_height);
+
+  view->epoch = 0;
+
+  /* Initialize random seed */
+  srand(time(NULL));
+
+  /* Spawn initial random pixels */
+  int initial_pixels = rand() % (view->grid_height * 64);
+  for (int i = 0; i < initial_pixels; i++) {
+    int x = rand() % view->grid_width;
+    int y = rand() % view->grid_height;
+    bitmap_set_pixel(view->live, x, y, 1);
+  }
+  set_Aactive(view->active, view->live, view->dx, view->dy);
+
+  /* Initialize box animation */
+  int box_width = view->grid_width / 3;
+  int box_height = view->grid_height / 3;
+  int box_x = (view->grid_width - box_width) / 2;
+  int box_y = (view->grid_height - box_height) / 2;
+  view->box = box_anim_init(box_x, box_y, box_width, box_height);
+
+  return view;
+}
+
+static void view_free(view_t *view) {
+  if (view == NULL)
+    return;
+
+  /* Cleanup game state */
+  if (view->live)
+    bitmap_destroy(view->live);
+  if (view->live2)
+    bitmap_destroy(view->live2);
+  if (view->live3)
+    bitmap_destroy(view->live3);
+
+  if (view->active)
+    destroyactive(view->active);
+  if (view->active2)
+    destroyactive(view->active2);
+  if (view->active3)
+    destroyactive(view->active3);
+
+  box_anim_free(&view->box);
+
+  free(view);
+}
+
+/* ==================== RENDERING ==================== */
+
+/* Draw handler callback - called by Plymouth when it needs to redraw */
+static void on_draw(void *user_data, ply_pixel_buffer_t *pixel_buffer, int x, int y,
+                    int width, int height, ply_pixel_display_t *display) {
+  view_t *view = (view_t *)user_data;
+  uint32_t *pixels;
+  Bitmap *current_bmp;
+  int vari = (view->epoch % 3) + 1;
+  unsigned long buffer_width;
+
+  /* Get current bitmap */
+  if (vari == 1)
+    current_bmp = view->live2;
+  else if (vari == 2)
+    current_bmp = view->live3;
+  else
+    current_bmp = view->live;
+
+  /* Get pixel buffer data and dimensions */
+  pixels = ply_pixel_buffer_get_argb32_data(pixel_buffer);
+  buffer_width = ply_pixel_buffer_get_width(pixel_buffer);
+
+  /* Draw game of life cells in the requested area */
+  for (int screen_y = y; screen_y < y + height && screen_y < view->screen_height; screen_y++) {
+    for (int screen_x = x; screen_x < x + width && screen_x < view->screen_width; screen_x++) {
+      int grid_x = screen_x / CELL_SIZE;
+      int grid_y = screen_y / CELL_SIZE;
+      
+      if (grid_x < view->grid_width && grid_y < view->grid_height && 
+          bitmap_get_pixel(current_bmp, grid_x, grid_y)) {
+        /* Cell is alive - draw white pixel */
+        pixels[screen_y * buffer_width + screen_x] = 0xFFFFFFFF;
+      } else {
+        /* Cell is dead or background - draw black */
+        pixels[screen_y * buffer_width + screen_x] = 0xFF000000;
+      }
+    }
+  }
+}
+
+static void view_draw(view_t *view) {
+  /* Request screen redraw */
+  ply_pixel_display_draw_area(view->display, 0, 0, view->screen_width, view->screen_height);
+}
+
+/* ==================== GAME LOGIC ==================== */
+
+static int view_update_game(view_t *view) {
+  int changes = 0;
+  int vari = (view->epoch % 3) + 1;
+
+  /* Run Conway's Game of Life update */
+  if (vari == 1) {
+    changes = loop(view->live, view->live2, view->active, view->active2,
+                   view->dx, view->dy);
+    box_anim_draw_frame(&view->box, NULL, 1, view->epoch);
+  } else if (vari == 2) {
+    changes = loop(view->live2, view->live3, view->active2, view->active3,
+                   view->dx, view->dy);
+    box_anim_draw_frame(&view->box, NULL, 2, view->epoch);
+  } else {
+    changes = loop(view->live3, view->live, view->active3, view->active,
+                   view->dx, view->dy);
+    box_anim_draw_frame(&view->box, NULL, 3, view->epoch);
+  }
+
+  /* Count alive cells */
+  Active *current_active = (vari == 1)
+                               ? view->active2
+                               : ((vari == 2) ? view->active3 : view->active);
+  Bitmap *current_bmp =
+      (vari == 1) ? view->live2 : ((vari == 2) ? view->live3 : view->live);
+
+  int alive = 0;
+  for (int i = 0; i < current_active->count; i++) {
+    int x = current_active->indices[i] % current_bmp->width;
+    int y = current_active->indices[i] / current_bmp->width;
+    if (bitmap_get_pixel(current_bmp, x, y))
+      alive++;
+  }
+
+  /* Spawn new pixels if needed */
+  uint32_t max_alive = (uint)(60 - view->epoch / 2);
+  if (max_alive < 10)
+    max_alive = 10;
+  uint32_t spawn_number = view->grid_width * 2;
+
+  if (changes == 0 || alive < max_alive) {
+    if (vari == 1) {
+      spawn(spawn_number, view->live2, view->active2, view->dx, view->dy);
+      set_Aactive(view->active2, view->live2, view->dx, view->dy);
+    } else if (vari == 2) {
+      spawn(spawn_number, view->live3, view->active3, view->dx, view->dy);
+      set_Aactive(view->active3, view->live3, view->dx, view->dy);
+    } else {
+      spawn(spawn_number, view->live, view->active, view->dx, view->dy);
+      set_Aactive(view->active, view->live, view->dx, view->dy);
+    }
+  }
+
+  return changes;
+}
+
+/* ==================== ANIMATION LOOP ==================== */
+
+static void on_timeout(view_t *view) {
+  ply_boot_splash_plugin_t *plugin = view->plugin;
+
+  if (!plugin->is_visible || !plugin->is_animating)
+    return;
+
+  /* Update game state */
+  view_update_game(view);
+
+  /* Draw to screen */
+  view_draw(view);
+
+  /* Increment epoch */
+  view->epoch++;
+
+  /* Stop after MAX_EPOCHS */
+  if (view->epoch >= MAX_EPOCHS) {
+    return;
+  }
+
+  /* Schedule next frame */
+  ply_event_loop_watch_for_timeout(plugin->loop, 1.0 / FRAMES_PER_SECOND,
+                                   (ply_event_loop_timeout_handler_t)on_timeout,
+                                   view);
+}
+
+static void start_animation(ply_boot_splash_plugin_t *plugin) {
+  ply_list_node_t *node;
+
+  if (plugin->is_animating)
+    return;
+
+  plugin->is_animating = true;
+
+  /* Start animation for all views */
+  node = ply_list_get_first_node(plugin->views);
+  while (node != NULL) {
+    view_t *view = ply_list_node_get_data(node);
+    on_timeout(view);
+    node = ply_list_get_next_node(plugin->views, node);
+  }
+}
+
+static void stop_animation(ply_boot_splash_plugin_t *plugin) {
+  plugin->is_animating = false;
+}
+
+/* ==================== PLUGIN INTERFACE ==================== */
+
+static ply_boot_splash_plugin_t *create_plugin(ply_key_file_t *key_file) {
+  ply_boot_splash_plugin_t *plugin;
+
+  plugin = calloc(1, sizeof(ply_boot_splash_plugin_t));
+  plugin->views = ply_list_new();
+
+  return plugin;
+}
+
+static void destroy_plugin(ply_boot_splash_plugin_t *plugin) {
+  if (plugin == NULL)
+    return;
+
+  if (plugin->views != NULL) {
+    ply_list_node_t *node = ply_list_get_first_node(plugin->views);
+    while (node != NULL) {
+      ply_list_node_t *next_node;
+      view_t *view = ply_list_node_get_data(node);
+      next_node = ply_list_get_next_node(plugin->views, node);
+      view_free(view);
+      node = next_node;
+    }
+    ply_list_free(plugin->views);
+  }
+
+  free(plugin);
+}
+
+static void add_pixel_display(ply_boot_splash_plugin_t *plugin,
+                              ply_pixel_display_t *display) {
+  view_t *view;
+
+  view = view_new(plugin, display);
+  ply_list_append_data(plugin->views, view);
+}
+
+static void remove_pixel_display(ply_boot_splash_plugin_t *plugin,
+                                 ply_pixel_display_t *display) {
+  ply_list_node_t *node;
+
+  node = ply_list_get_first_node(plugin->views);
+  while (node != NULL) {
+    view_t *view = ply_list_node_get_data(node);
+    ply_list_node_t *next_node = ply_list_get_next_node(plugin->views, node);
+
+    if (view->display == display) {
+      view_free(view);
+      ply_list_remove_node(plugin->views, node);
+      return;
+    }
+
+    node = next_node;
+  }
+}
+
+static bool show_splash_screen(ply_boot_splash_plugin_t *plugin,
+                               ply_event_loop_t *loop,
+                               ply_buffer_t *boot_buffer,
+                               ply_boot_splash_mode_t mode) {
+  plugin->loop = loop;
+  plugin->mode = mode;
+  plugin->is_visible = true;
+
+  start_animation(plugin);
+
+  return true;
+}
+
+static void hide_splash_screen(ply_boot_splash_plugin_t *plugin,
+                               ply_event_loop_t *loop) {
+  plugin->is_visible = false;
+  stop_animation(plugin);
+}
+
+static void on_boot_progress(ply_boot_splash_plugin_t *plugin, double duration,
+                             double percent_done) {
+  /* Optional: adjust animation based on boot progress */
+}
+
+static void detach_from_event_loop(ply_boot_splash_plugin_t *plugin) {
+  plugin->loop = NULL;
+}
+
+/* ==================== PLUGIN EXPORT ==================== */
+
+ply_boot_splash_plugin_interface_t *ply_boot_splash_plugin_get_interface(void) {
+  static ply_boot_splash_plugin_interface_t plugin_interface = {
+      .create_plugin = create_plugin,
+      .destroy_plugin = destroy_plugin,
+      .add_pixel_display = add_pixel_display,
+      .remove_pixel_display = remove_pixel_display,
+      .show_splash_screen = show_splash_screen,
+      .hide_splash_screen = hide_splash_screen,
+      .on_boot_progress = on_boot_progress,
+  };
+
+  return &plugin_interface;
+}
