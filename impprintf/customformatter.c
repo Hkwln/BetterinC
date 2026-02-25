@@ -1,76 +1,108 @@
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
 typedef void (*formatter_fn)(va_list *args, char *string, size_t *pos,
                              size_t buf_len);
 typedef struct {
   char key;
   formatter_fn fn;
 } FormatEntry;
-
 void fmt_int(va_list *args, char *string, size_t *pos, size_t buf_len) {
   int num = va_arg(*args, int);
-  char *number = malloc(10000 * sizeof(int));
-  if (num == 0) {
+  bool isNEG = num < 0;
+
+  unsigned int n1 = isNEG ? -num : num;
+  char number[50];
+  if (n1 == 0) {
     number[0] = '0';
     number[1] = '\0';
   }
+
   int i = 0;
-  for (; num > 0;) {
-    number[i++] = (num % 10) + '0';
-    num /= 10;
+  for (; n1 != 0;) {
+    number[i++] = (n1 % 10) + '0';
+    n1 /= 10;
   }
+  if (isNEG)
+    number[i++] = '-';
+
   number[i] = '\0';
+  for (int t = 0; t < i / 2; t++) {
+    number[t] ^= number[i - t - 1];
+    number[i - t - 1] ^= number[t];
+    number[t] ^= number[i - t - 1];
+  }
+  // insert:
   strcat(string, number);
-  free(number);
+  *pos += strlen(number);
 }
 
 void fmt_str(va_list *args, char *string, size_t *pos, size_t buf_len) {
-  char *str = va_arg(*args, char *);
+  char *str = malloc(sizeof(char) * 5000);
+  str = va_arg(*args, char *);
   strcat(string, str);
+  *pos += strlen(str);
 }
 
 void fmt_hex(va_list *args, char *string, size_t *pos, size_t buf_len) {
   const char hex_digits[] = "0123456789ABSDEF";
-  int len = 0;
+  int required_digits = 0;
+  char hex_string[50];
   unsigned int str = va_arg(*args, unsigned int);
-  // TODO: convert unsigned in into hex string:
+  unsigned int temp = str;
+  while (temp) {
+    required_digits++;
+    temp >>= 4;
+  }
+  hex_string[required_digits] = '\0';
+  temp = str;
+  for (int i = required_digits - 1; i >= 0; i--) {
+    hex_string[i] = hex_digits[temp & 0xF];
+    temp >>= 4;
+  }
+  strcat(string, hex_string);
+  *pos += strlen(hex_string);
 }
 
 void my_format(char *buf, size_t buf_len, const char *fmt, ...) {
   FormatEntry table[] = {{'d', fmt_int}, {'s', fmt_str}, {'x', fmt_hex}};
   va_list args;
   va_start(args, fmt);
-
-#if 1
+  buf[0] = '\0';
   size_t pos = 0;
-  formatter_fn fn;
+  formatter_fn fn = NULL;
   for (size_t i = 0; fmt[i] != '\0'; i++) {
+
     if (fmt[i] == '%') {
-      for (size_t b = 0; b < 2; b++) {
-        if (fmt[i++] == table[b].key) {
+      for (size_t b = 0; b < sizeof(table) / sizeof(table[0]); b++) {
+        if (fmt[i + 1] == table[b].key) {
           fn = table[b].fn;
+          break;
         }
       }
-      fn(&args, buf, &pos, buf_len);
-      buf[pos++] = fmt[i];
+      if (fn) {
+
+        fn(&args, buf, &pos, buf_len);
+        i++;
+      } else {
+        buf[pos++] = fmt[i];
+      }
 
     } else {
       buf[pos++] = fmt[i];
     }
   }
-#endif
   va_end(args);
   buf[pos] = '\0';
   printf("%s\n", buf);
   // write(STDOUT_FILENO, buf, buf_len);
 }
 int main(void) {
-  char buf[30000];
+  char buf[3000];
   // test:
   my_format(buf, sizeof(buf), "value: %d hex: %x name: %s", 42, 255, "Alice");
   return 0;
