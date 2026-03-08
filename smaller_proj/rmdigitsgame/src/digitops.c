@@ -1,5 +1,3 @@
-#include <math.h>
-#include <stdio.h>
 int get_total_digits(int starting_number) {
   int count = 0;
   while (starting_number) {
@@ -13,28 +11,25 @@ int delete_digit(int number, int total_digits, int digit) {
   int tmparr[total_digits];
   int deleted = 0;
   int new_number = 0;
-  if (total_digits == digit) {
-    // TODO: further checks:
-  }
+  int j = 0;
   for (int i = 0; number; i++) {
     if (i == digit - 1) {
       number /= 10;
       deleted++;
       continue;
     }
-    tmparr[i] = number % 10;
+    tmparr[j++] = number % 10;
     number /= 10;
   }
-  // FIXME: build the a number out of the array:
-  for (int builder = total_digits - deleted; builder >= 0; builder--) {
-    new_number = tmparr[builder] * pow((total_digits - deleted), 10);
+  for (int builder = j - 1; builder >= 0; builder--) {
+    new_number = (new_number * 10) + tmparr[builder];
   }
   return new_number;
 }
-#if 1
+#if 0
 // test
 int main() {
-  printf("expected 15: %d\n", delete_digit(135, 3, 2));
+  printf("expected 15: %d\n", delete_digit(1035, 4, 4));
 
   return 1;
 }

@@ -4,12 +4,12 @@
 #include <stdlib.h>
 
 int main(int argc, const char **argv) {
-  fflush(stdout);
   printf("Welcome to your random digit game^_^\n");
   int number = rand();
   int total_digits = get_total_digits(number);
   _Bool single = 0;
   char buf[120];
+  int count = 0;
   buf[0] = '\0';
   char *endptr;
   if (argc > 1) {
@@ -18,20 +18,21 @@ int main(int argc, const char **argv) {
     printf("this is one player game mode \n");
     single = true;
   }
-  printf("I created a new random number for you: \n\t\t%d\t total digits: %d\n "
+  printf("I created a new random number for you: %d\n\t\t\t total digits: %d\n"
          "which digit do you "
          "want to remove?\n",
          number, total_digits);
-  fgets(buf, sizeof(buf), stdin);
-  int digit = strtol(buf, &endptr, 10);
-#if 0
-  if (*endptr != '\0' || buf == endptr) {
-    printf("error invalid input, you can only input numbers\n");
+  for (; number; count++) {
+    fgets(buf, sizeof(buf), stdin);
+    int digit = strtol(buf, &endptr, 10);
+    if (digit > total_digits) {
+      digit = 0;
+    }
+    number = delete_digit(number, total_digits, digit);
+    printf("new number: %d\n", number);
   }
-#endif
-  if (digit > total_digits) {
-    digit = 0;
-  }
-  printf("%d\n", digit);
-  number = delete_digit(number, total_digits, digit);
+  if (count % 2 == 0)
+    printf("player 1 won \ncongrats!!\n");
+  else
+    printf("player 2 won");
 }
