@@ -77,7 +77,7 @@ const char *token_to_string(TokenType type) {
     return "UNKNOWN";
   }
 }
-#if 1
+#if 0
 // testing
 int main(void) {
   const char *src = "(10/4)+5";

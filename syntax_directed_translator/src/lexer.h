@@ -15,3 +15,4 @@ typedef struct {
   int value; /* nur relevant wenn type == TOKEN_NUMBER */
 } Token;
 Token next_token(const char **src);
+const char *token_to_string(TokenType type);
