@@ -3,11 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// global variables:
-Token lookahead;
-const char *cursor;
 void expr();
-void advance() { lookahead = next_token(&cursor); }
 void match(TokenType expected) {
   if (lookahead.type != expected) {
     fprintf(stderr, "error this does not match \n");
@@ -19,7 +15,7 @@ void match(TokenType expected) {
 // handles ()
 void factor(void) {
   if (lookahead.type == TOKEN_NUMBER) {
-    printf("%d, ", lookahead.value);
+    printf("%d ", lookahead.value);
     advance();
   } else if (lookahead.type == TOKEN_LPAREN) {
     advance();
@@ -37,7 +33,7 @@ void term(void) {
     advance();
     factor();
     // do something
-    printf("%s", token_to_string(token));
+    printf("%s ", token_to_string(token));
   }
 }
 void expr(void) {
@@ -47,14 +43,14 @@ void expr(void) {
     TokenType token = lookahead.type;
     advance();
     term();
-    printf("%s", token_to_string(token));
+    printf("%s ", token_to_string(token));
   }
   if (lookahead.type == TOKEN_EOF) {
     printf("\n");
     return;
   }
 }
-#if 1
+#if 0
 int main(void) {
   cursor = "(1/4)*2";
   advance();

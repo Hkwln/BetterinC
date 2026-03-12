@@ -9,14 +9,13 @@ aus `*src` und rückt den Zeiger vor. Leerzeichen überspringen.
 Token next_token(const char **src) {
   Token token;
   char c = **src;
-  if (c == '\0') {
+  if (c == '\0' || c == '\n') {
     token.type = TOKEN_EOF;
     return token;
   }
   (*src)++;
   if (c == ' ') {
-    next_token(src);
-    return token;
+    return next_token(src);
   }
   if (c == '+') {
     token.type = TOKEN_PLUS;
@@ -43,7 +42,7 @@ Token next_token(const char **src) {
     char c2 = **src;
     int num1 = c - '0';
     while (**src == '1' || **src == '2' || **src == '3' || **src == '4' ||
-           **src == '5' || c2 == '6' || c2 == '7' || **src == '8' ||
+           **src == '5' || **src == '6' || **src == '7' || **src == '8' ||
            **src == '9' || **src == '0') {
       int num2 = c2 - '0';
       num1 = (num1 * 10) + num2;
@@ -58,13 +57,13 @@ Token next_token(const char **src) {
 const char *token_to_string(TokenType type) {
   switch (type) {
   case (TOKEN_PLUS):
-    return "PLUS, ";
+    return "+";
   case (TOKEN_MINUS):
-    return "MINUS, ";
+    return "-";
   case (TOKEN_STAR):
-    return "STAR, ";
+    return "*";
   case (TOKEN_SLASH):
-    return "SLASH, ";
+    return "/";
   case (TOKEN_LPAREN):
     return "Lparen, ";
   case (TOKEN_RPAREN):
