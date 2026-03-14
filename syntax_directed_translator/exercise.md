@@ -1,13 +1,14 @@
 # Übung: Syntax-Directed Translator in C
 
-## Infix-Ausdruck → Postfix (Reverse Polish Notation)
+## Infix-Ausdruck → Intermediate Code (mit Variablen & Symbol Table)
 
-> Ziel: Du baust from scratch einen mini-Übersetzer in C.
+> Ziel: Du erweiterst deinen mini-Übersetzer schrittweise bis zu einem echten
+> Compiler-Frontend: Lexer (2.6) → Parser → Symbol Table (2.7) → Intermediate Code (2.8).
 > Kein Framework, keine Bibliothek – nur C, dein Editor und das Dragon Book (Kap. 2).
 
 ---
 
-## Was du baust
+## Was du bisher gebaut hast ✓
 
 Ein Programm, das arithmetische Ausdrücke von **Infix** in **Postfix** übersetzt:
 
@@ -22,162 +23,134 @@ Eingabe:  10 / 2 + 3
 Ausgabe:  10 2 / 3 +
 ```
 
-Warum Postfix? Stack-Maschinen (JVM, WebAssembly, frühe Compiler-Backends) arbeiten
-genau so. Wenn du das verstehst, verstehst du wie Code-Generierung funktioniert.
+Das war Kap. 2.1–2.5. Jetzt geht es weiter.
 
 ---
 
-## Schritt 1 – Der Lexer (Tokenizer)
+## Schritt 1 – Lexer verbessern (Kap. 2.6) ✓ / erweiterbar
 
-**Aufgabe:** Schreibe eine Funktion, die einen String zeichenweise liest und Tokens produziert.
+Du hast bereits einen funktionierenden Lexer. Kap. 2.6 führt zwei wichtige
+Erweiterungen ein, die du jetzt brauchst:
 
-Ein Token ist eine der folgenden Kategorien:
+**Bezeichner (Identifier):** Variablennamen wie `x`, `foo`, `total`.
 
-- `TOKEN_NUMBER` – eine ganze Zahl, z.B. `42`
-- `TOKEN_PLUS` – `+`
-- `TOKEN_MINUS` – `-`
-- `TOKEN_STAR` – `*`
-- `TOKEN_SLASH` – `/`
-- `TOKEN_LPAREN` – `(`
-- `TOKEN_RPAREN` – `)`
-- `TOKEN_EOF` – Ende der Eingabe
+Erweitere dein Token um:
+
+- `TOKEN_IDENT` – ein Name, z.B. `x` oder `result`
+- `TOKEN_ASSIGN` – `=`
+
+Erweitere dein `Token`-Struct um ein `char name[64]` Feld für den Namen.
+
+**Testfälle:**
+
+```
+"x = 3 + 4"   → IDENT(x), ASSIGN, NUMBER(3), PLUS, NUMBER(4), EOF
+"y = x * 2"   → IDENT(y), ASSIGN, IDENT(x), STAR, NUMBER(2), EOF
+```
+
+---
+
+## Schritt 2 – Symbol Table (Kap. 2.7)
+
+Eine Symbol Table speichert alle Variablen, die das Programm kennt.
+Für jetzt reicht: Name → Wert (integer).
+
+Implementiere eine einfache Symbol Table mit zwei Funktionen:
 
 ```c
-typedef enum {
-    TOKEN_NUMBER,
-    TOKEN_PLUS, TOKEN_MINUS,
-    TOKEN_STAR, TOKEN_SLASH,
-    TOKEN_LPAREN, TOKEN_RPAREN,
-    TOKEN_EOF
-} TokenType;
-
-typedef struct {
-    TokenType type;
-    int value; /* nur relevant wenn type == TOKEN_NUMBER */
-} Token;
+void   symtable_set(const char *name, int value);
+int    symtable_get(const char *name);  /* exit(1) wenn nicht gefunden */
 ```
 
-**Deine Aufgabe:**
-Implementiere `Token next_token(const char **src)` — sie liest das nächste Token
-aus `*src` und rückt den Zeiger vor. Leerzeichen überspringen.
+Intern: ein Array von Einträgen mit festem Limit (z.B. 64 Variablen) reicht.
 
-**Testfälle für Schritt 1:**
+```c
+typedef struct { char name[64]; int value; } Symbol;
+Symbol table[64];
+int table_size = 0;
+```
 
-```
-"3 + 4"   → NUMBER(3), PLUS, NUMBER(4), EOF
-"(10/2)"  → LPAREN, NUMBER(10), SLASH, NUMBER(2), RPAREN, EOF
-```
+**Wann wird sie benutzt?**
+
+- `symtable_set` → wenn eine Zuweisung geparst wird: `x = 3 + 4`
+- `symtable_get` → wenn ein Bezeichner in einem Ausdruck vorkommt: `x * 2`
 
 ---
 
-## Schritt 2 – Der Parser (Rekursiver Abstieg)
+## Schritt 3 – Parser erweitern: Zuweisungen
 
-**Konzept:** Du übersetzt die Grammatik direkt in C-Funktionen.
-Jede Regel wird eine Funktion. Das ist _recursive descent parsing_.
-
-Die Grammatik für Ausdrücke mit korrekter Präzedenz:
+Erweitere die Grammatik um Zuweisungen und Bezeichner als Werte:
 
 ```
-expr    → term  ( ('+' | '-') term  )*
+program → stmt*
+stmt    → IDENT '=' expr
+expr    → term   ( ('+' | '-') term   )*
 term    → factor ( ('*' | '/') factor )*
-factor  → NUMBER | '(' expr ')'
+factor  → NUMBER | IDENT | '(' expr ')'
 ```
 
-Warum diese Struktur? `*` und `/` binden stärker als `+` und `-`.
-Die Grammatik kodiert das direkt — `term` wird _innerhalb_ von `expr` aufgerufen,
-also werden Multiplikationen zuerst verarbeitet.
+`factor()` muss jetzt bei `TOKEN_IDENT` in der Symbol Table nachschlagen.
+`stmt()` parst eine Zuweisung und speichert das Ergebnis in der Symbol Table.
 
-**Deine Aufgabe:**
-Implementiere drei Funktionen:
+**Eingabe (mehrere Zeilen):**
 
-```c
-void expr(void);    /* verarbeitet + und - */
-void term(void);    /* verarbeitet * und / */
-void factor(void);  /* verarbeitet Zahlen und geklammerte Ausdrücke */
+```
+x = 3 + 4
+y = x * 2
 ```
 
-Jede Funktion soll beim Parsen sofort die Postfix-Ausgabe erzeugen (→ `printf`).
-Das ist _syntax-directed translation_: die Ausgabe wird während des Parsens generiert.
+**Ausgabe (Zwischenschritt — Postfix je Zeile):**
 
-**Hinweis zur Ausgabereihenfolge:**
-Bei `expr`: erst linken `term` parsen (gibt schon Postfix aus), dann `term` rechts,
-dann erst den Operator ausgeben. Bei `factor`: Zahl sofort ausgeben.
-
----
-
-## Schritt 3 – Alles zusammenbauen
-
-Schreibe `main()`, die:
-
-1. Eine Zeile von `stdin` liest
-2. Den Lexer initialisiert
-3. `expr()` aufruft
-4. Einen Zeilenumbruch ausgibt
-
-Minimales Gerüst:
-
-```c
-#include <stdio.h>
-#include <ctype.h>
-#include <stdlib.h>
-
-/* --- Token-Typen --- */
-/* --- Globaler "lookahead" Token --- */
-Token lookahead;
-const char *cursor;
-
-/* next_token() liest das nächste Token */
-/* advance()    ruft next_token() auf und speichert in lookahead */
-/* match(type)  prüft ob lookahead == type, dann advance(), sonst Fehler */
-
-void factor(void);
-void term(void);
-void expr(void);
-
-int main(void) {
-    char line[256];
-    if (!fgets(line, sizeof(line), stdin)) return 1;
-    cursor = line;
-    advance();   /* erstes Token laden */
-    expr();
-    printf("\n");
-    return 0;
-}
+```
+x = 3 4 +
+y = x 2 *
 ```
 
 ---
 
-## Schritt 4 – Bonus: Stack-VM Code-Generierung
+## Schritt 4 – Intermediate Code Generation (Kap. 2.8)
 
-Statt Postfix-Zahlen auszugeben, generiere Instruktionen für eine imaginäre Stack-VM:
+Statt Postfix ausgeben: generiere **3-Adress-Code** (Three-Address Code).
+Das ist die Sprache echter Compiler-Backends (LLVM IR, GCC RTL).
+
+Jede Instruktion hat die Form: `temp = operand op operand`
 
 ```
-Eingabe:  3 + 4 * 2
+Eingabe:  x = 3 + 4 * 2
 Ausgabe:
-  PUSH 3
-  PUSH 4
-  PUSH 2
-  MUL
-  ADD
+  t1 = 4 * 2
+  t2 = 3 + t1
+  x  = t2
 ```
 
-Das ist ein echter erster Schritt in Richtung Code-Generierung.
-Ändere nur die Ausgabe in `expr()`, `term()` und `factor()` — der Parser bleibt gleich.
-
----
-
-## Schritt 5 – Bonus: Evaluator
-
-Statt Instruktionen ausgeben: Ausdrücke direkt berechnen.
-Ändere die Funktionen so, dass sie `int` zurückgeben:
+Dafür brauchst du einen **temporären Variablenzähler**:
 
 ```c
-int expr(void);
-int term(void);
-int factor(void);
+int tmp_count = 0;
+char *new_temp(void);  /* gibt "t1", "t2", ... zurück */
 ```
 
-Dann gib am Ende das Ergebnis aus. Vergleiche mit einem Taschenrechner.
+Ändere `expr()`, `term()` und `factor()` so, dass sie einen Tempnamen
+zurückgeben (`char *`) statt direkt zu drucken. Die Instruktion wird erst
+gedruckt, wenn beide Operanden bekannt sind.
+
+**Eingabe:**
+
+```
+x = 3 + 4 * 2
+y = (x + 1) * 3
+```
+
+**Ausgabe:**
+
+```
+t1 = 4 * 2
+t2 = 3 + t1
+x  = t2
+t3 = x + 1
+t4 = t3 * 3
+y  = t4
+```
 
 ---
 
@@ -185,46 +158,53 @@ Dann gib am Ende das Ergebnis aus. Vergleiche mit einem Taschenrechner.
 
 ```
 syntax_directed_translator/
-├── exercise.md          ← diese Datei
-├── translator.c         ← deine Implementierung
-└── Makefile             ← optional: gcc -Wall -o translator translator.c
+├── exercise.md       ← diese Datei
+├── src/
+│   ├── lexer.h / lexer.c       ← Token-Typen, next_token()
+│   ├── symtable.h / symtable.c ← Symbol Table (neu)
+│   ├── parser.h / parser.c     ← expr/term/factor/stmt
+│   └── main.c                  ← Eingabe lesen, Schleife über Zeilen
+└── Makefile
 ```
 
 ---
 
-## Hinweise & häufige Fehler
+## Hinweise
 
-- **Lookahead:** Der Parser muss immer _ein Token voraus_ schauen. Halte immer
-  eine globale `lookahead`-Variable aktuell.
-- **match() nicht vergessen:** Nach dem Erkennen eines Tokens musst du es
-  "konsumieren" (advance aufrufen), sonst läuft der Parser in einer Endlosschleife.
-- **Klammern in `factor()`:** `'(' expr ')'` — du konsumierst `(`, rufst `expr()`
-  auf (der gibt schon alles aus), dann konsumierst du `)`. Nichts extra ausgeben.
-- **Fehlerbehandlung:** Erstmal nur `exit(1)` mit einer Fehlermeldung reicht.
+- **Temporäre Namen:** `new_temp()` kann einfach `sprintf` in einen statischen
+  Puffer schreiben: `sprintf(buf, "t%d", ++tmp_count)`.
+- **Mehrere Zeilen:** `main()` liest in einer Schleife mit `fgets` — eine Zeile
+  pro `stmt()` Aufruf. Vergiss nicht `advance()` vor jedem `stmt()`.
+- **Bezeichner in `factor()`:** Wenn du einen `TOKEN_IDENT` siehst, ruf
+  `symtable_get()` auf und gib den Tempnamen zurück wie bei einer Zahl.
 
 ---
 
 ## Erfolgskriterien
 
 ```bash
-echo "3 + 4 * 2"      | ./translator   # → 3 4 2 * +
-echo "(1 + 2) * 3"    | ./translator   # → 1 2 + 3 *
-echo "10 / 2 + 3 * 4" | ./translator   # → 10 2 / 3 4 * +
-echo "((1+2))"        | ./translator   # → 1 2 +
+printf "x = 3 + 4 * 2\ny = x + 1\n" | ./translator
 ```
 
-Wenn diese vier Fälle stimmen, hast du einen funktionierenden Syntax-Directed Translator.
+Erwartete Ausgabe:
+
+```
+t1 = 4 * 2
+t2 = 3 + t1
+x  = t2
+t3 = x + 1
+y  = t3
+```
 
 ---
 
 ## Verbindung zum Dragon Book
 
-| Konzept hier           | Dragon Book Kap. 2                      |
-| ---------------------- | --------------------------------------- |
-| `Token` + `next_token` | Lexical Analysis (2.6)                  |
-| Grammatikregeln        | Context-Free Grammars (2.2)             |
-| `expr/term/factor`     | Recursive-Descent Parsing (2.4)         |
-| Ausgabe beim Parsen    | Syntax-Directed Translation (2.3)       |
-| Bonus: Stack-VM        | Intermediate Code Generation (Kap. 6/8) |
-
-Nach dieser Übung wirst du Kap. 2 mit ganz anderen Augen lesen.
+| Konzept hier              | Dragon Book                        |
+| ------------------------- | ---------------------------------- |
+| `Token` + `next_token`    | Lexical Analysis (2.6)             |
+| Bezeichner, `=`           | Lexical Analysis (2.6)             |
+| `symtable_get/set`        | Symbol Tables (2.7)                |
+| `expr/term/factor`        | Recursive-Descent Parsing (2.4)    |
+| `stmt` + Zuweisung        | Syntax-Directed Translation (2.3)  |
+| 3-Adress-Code, `new_temp` | Intermediate Code Generation (2.8) |

@@ -17,6 +17,10 @@ void factor(void) {
   if (lookahead.type == TOKEN_NUMBER) {
     printf("%d ", lookahead.value);
     advance();
+  } else if (lookahead.type == TOKEN_IDENT) {
+    printf("%s ", lookahead.name);
+    // TODO: implement symtable_set
+    advance();
   } else if (lookahead.type == TOKEN_LPAREN) {
     advance();
     expr();

@@ -1,11 +1,27 @@
 #include "lexer.h"
-#include <stdio.h>
-#include <string.h>
-/*
-Implementiere `Token next_token(const char **src)` — sie liest das nächste Token
-aus `*src` und rückt den Zeiger vor. Leerzeichen überspringen.
- * */
-// TODO: what if the number is 12? both 1 and 2 are read seperated;
+#include <stdbool.h>
+// helper function to check if the char is a digit
+bool is_digit(char c) {
+  if (c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' ||
+      c == '7' || c == '8' || c == '9' || c == '0')
+    return 1;
+  else
+    return 0;
+}
+bool is_letter(char c) {
+  if (c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
+      c == 'g' || c == 'h' || c == 'i' || c == 'j' || c == 'k' || c == 'l' ||
+      c == 'm' || c == 'n' || c == 'o' || c == 'p' || c == 'q' || c == 'r' ||
+      c == 's' || c == 't' || c == 'u' || c == 'v' || c == 'w' || c == 'x' ||
+      c == 'y' || c == 'z' || c == 'A' || c == 'B' || c == 'C' || c == 'D' ||
+      c == 'E' || c == 'F' || c == 'G' || c == 'H' || c == 'I' || c == 'J' ||
+      c == 'K' || c == 'L' || c == 'M' || c == 'N' || c == 'O' || c == 'P' ||
+      c == 'Q' || c == 'R' || c == 'S' || c == 'T' || c == 'U' || c == 'V' ||
+      c == 'W' || c == 'X' || c == 'Y' || c == 'Z')
+    return 1;
+  return false;
+}
+// checks what type is next token
 Token next_token(const char **src) {
   Token token;
   char c = **src;
@@ -36,14 +52,13 @@ Token next_token(const char **src) {
   } else if (c == ')') {
     token.type = TOKEN_RPAREN;
     return token;
-  } else if (c == '1' || c == '2' || c == '3' || c == '4' || c == '5' ||
-             c == '6' || c == '7' || c == '8' || c == '9' || c == '0') {
+  } else if (c == '=') {
+    token.type = TOKEN_ASSIGN;
+  } else if (is_digit(c)) {
     token.type = TOKEN_NUMBER;
     char c2 = **src;
     int num1 = c - '0';
-    while (**src == '1' || **src == '2' || **src == '3' || **src == '4' ||
-           **src == '5' || **src == '6' || **src == '7' || **src == '8' ||
-           **src == '9' || **src == '0') {
+    while (is_digit(**src)) {
       int num2 = c2 - '0';
       num1 = (num1 * 10) + num2;
       (*src)++;
@@ -51,19 +66,31 @@ Token next_token(const char **src) {
     }
     token.value = num1;
     return token;
+  } else if (c == '=') {
+    token.type = TOKEN_ASSIGN;
+  } else if (is_letter(c) || c == '_') {
+    token.type = TOKEN_IDENT;
+    int i = 0;
+    token.name[i++] = c;
+    while (is_letter(**src) || **src == '_') {
+      token.name[i++] = **src;
+      (*src)++;
+    }
+    token.name[i] = '\0';
+    return token;
   }
   return token;
 }
 const char *token_to_string(TokenType type) {
   switch (type) {
   case (TOKEN_PLUS):
-    return "+";
+    return "PLUS, ";
   case (TOKEN_MINUS):
-    return "-";
+    return "MINUS, ";
   case (TOKEN_STAR):
-    return "*";
+    return "STAR, ";
   case (TOKEN_SLASH):
-    return "/";
+    return "SLASH, ";
   case (TOKEN_LPAREN):
     return "Lparen, ";
   case (TOKEN_RPAREN):
@@ -72,21 +99,29 @@ const char *token_to_string(TokenType type) {
     return "Number";
   case (TOKEN_EOF):
     return "EOF";
+  case (TOKEN_ASSIGN):
+    return "ASSIGN, ";
+  case (TOKEN_IDENT):
+    return "IDENT";
   default:
     return "UNKNOWN";
   }
 }
 #if 0
+#include <stdio.h>
+#include <string.h>
 // testing
 int main(void) {
-  const char *src = "(10/4)+5";
+  const char *src = "x = y * 4";
   Token token[10];
   int i = 0;
   do {
     token[i] = next_token(&src);
     const char *str = token_to_string(token[i].type);
     if (strcmp(str, "Number") == 0) {
-      printf("%s(%d),  ", str, token[i].value);
+      printf("%s(%d), ", str, token[i].value);
+    } else if (strcmp(str, "IDENT") == 0) {
+      printf("%s(%s), ", str, token[i].name);
     } else {
       printf("%s", str);
     }
