@@ -9,7 +9,8 @@ typedef enum {
   TOKEN_RPAREN,
   TOKEN_EOF,
   TOKEN_IDENT,
-  TOKEN_ASSIGN
+  TOKEN_ASSIGN,
+  TOKEN_COMMA
 } TokenType;
 
 typedef struct {

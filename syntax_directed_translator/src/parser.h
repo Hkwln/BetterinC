@@ -2,8 +2,8 @@
 #include "lexer.h"
 extern Token lookahead;
 extern const char *cursor;
-
 static inline void advance() { lookahead = next_token(&cursor); }
-void expr(void);   /* verarbeitet + und - */
-void term(void);   /* verarbeitet * und / */
-void factor(void); /* verarbeitet Zahlen und geklammerte Ausdrücke */
+int expr(void);   /* verarbeitet + und - */
+int term(void);   /* verarbeitet * und / */
+int factor(void); /* verarbeitet Zahlen und geklammerte Ausdrücke */
+void stmt(void);  /* verarbeitet: variable = zuweisung*/

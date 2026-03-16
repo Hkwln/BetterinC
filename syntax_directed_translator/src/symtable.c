@@ -1,4 +1,5 @@
 #include "symtable.h"
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -14,13 +15,21 @@ void symtable_set(const char *name, int value) {
   table[table_size].value = value;
   table_size++;
 }
-// 0 == no match
-// 1 == match
-int symtable_get(const char *name) {
+void sym_edit_set(const char *name, int value) {
   for (int i = 0; i < table_size; i++) {
     if (strcmp(table[i].name, name)) {
-      return table[i].value;
+      table[i].value = value;
     }
   }
   exit(1);
+}
+// limit min = no match
+// else match
+int symtable_get(const char *name) {
+  for (int i = 0; i < table_size; i++) {
+    if (strcmp(table[i].name, name) == 0) {
+      return table[i].value;
+    }
+  }
+  return INT_MIN;
 } /* exit(1) wenn nicht gefunden */

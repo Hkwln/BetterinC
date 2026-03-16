@@ -25,13 +25,17 @@ bool is_letter(char c) {
 Token next_token(const char **src) {
   Token token;
   char c = **src;
-  if (c == '\0' || c == '\n') {
+  if (c == '\0') {
     token.type = TOKEN_EOF;
     return token;
   }
   (*src)++;
-  if (c == ' ') {
+  if (c == ' ' || c == '\n') {
     return next_token(src);
+  }
+  if (c == ';') {
+    token.type = TOKEN_COMMA;
+    return token;
   }
   if (c == '+') {
     token.type = TOKEN_PLUS;
