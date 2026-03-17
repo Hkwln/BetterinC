@@ -17,7 +17,7 @@ void symtable_set(const char *name, int value) {
 }
 void sym_edit_set(const char *name, int value) {
   for (int i = 0; i < table_size; i++) {
-    if (strcmp(table[i].name, name)) {
+    if (strcmp(table[i].name, name) == 0) {
       table[i].value = value;
     }
   }

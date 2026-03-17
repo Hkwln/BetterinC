@@ -88,13 +88,17 @@ Token next_token(const char **src) {
 const char *token_to_string(TokenType type) {
   switch (type) {
   case (TOKEN_PLUS):
-    return "PLUS, ";
+    // return "PLUS, ";
+    return "+";
   case (TOKEN_MINUS):
-    return "MINUS, ";
+    // return "MINUS, ";
+    return "-";
   case (TOKEN_STAR):
-    return "STAR, ";
+    // return "STAR, ";
+    return "*";
   case (TOKEN_SLASH):
-    return "SLASH, ";
+    // return "SLASH, ";
+    return "/";
   case (TOKEN_LPAREN):
     return "Lparen, ";
   case (TOKEN_RPAREN):
@@ -104,7 +108,8 @@ const char *token_to_string(TokenType type) {
   case (TOKEN_EOF):
     return "EOF";
   case (TOKEN_ASSIGN):
-    return "ASSIGN, ";
+    // return "ASSIGN, ";
+    return "=";
   case (TOKEN_IDENT):
     return "IDENT";
   default:

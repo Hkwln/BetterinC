@@ -1,9 +1,18 @@
 #pragma once
 #include "lexer.h"
+#include "symtable.h"
+#include <stdbool.h>
+
 extern Token lookahead;
 extern const char *cursor;
 static inline void advance() { lookahead = next_token(&cursor); }
-int expr(void);   /* verarbeitet + und - */
-int term(void);   /* verarbeitet * und / */
-int factor(void); /* verarbeitet Zahlen und geklammerte Ausdrücke */
-void stmt(void);  /* verarbeitet: variable = zuweisung*/
+
+struct Result {
+  char var_name[64];
+  int value;
+  bool is_literal;
+};
+struct Result expr(void);   /* verarbeitet + und - */
+struct Result term(void);   /* verarbeitet * und / */
+struct Result factor(void); /* verarbeitet Zahlen und geklammerte Ausdrücke */
+void stmt(void);            /* verarbeitet: variable = zuweisung*/

@@ -2,6 +2,7 @@
 #include <stdio.h>
 Token lookahead;
 const char *cursor;
+
 int main(void) {
   char line[256];
   line[0] = '\0';
@@ -9,6 +10,6 @@ int main(void) {
     return 1;
   cursor = line;
   advance();
-  expr();
+  stmt();
   return 0;
 }

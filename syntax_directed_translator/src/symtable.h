@@ -1,5 +1,4 @@
 #pragma once
-
 typedef struct {
   char name[64];
   int value;
