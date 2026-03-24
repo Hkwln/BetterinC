@@ -15,7 +15,8 @@ char *new_temp(void) {
   static int offset = 0;
   char *result = buf + offset;
   offset += sprintf(result, "t%d", ++tmp_count) + 1;
-  if (offset >= 120) offset = 0;
+  if (offset >= 120)
+    offset = 0;
   return result;
 }
 void match(TokenType expected) {
