@@ -2,5 +2,7 @@
 #include "define.h"
 // use static inine for pt_init or pt_allocate?
 page_table_t pt_init();
-void pt_allocate(page_table_entry_t entry, page_table_t* table);
+void map_page(uint32_t virt_addr, uint32_t frame_number, uint8_t protection,
+              page_table_t* table);
+void unmap_page(uint32_t virt_page_number, page_table_t* table);
 void pt_free(page_table_t* table);
