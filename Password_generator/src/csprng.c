@@ -1,25 +1,11 @@
-// here with the help of sha we implement true randomness!!!
-//
-/*V = seed (entropy from OS)
-counter = 0
-loop:
-    data = V || counter
-    output = SHA256(data)
-    counter++
-    // if more output needed, append output to buffer
-*/
+#include "csprng.h"
+#include "hashing.h"
+#include <stdlib.h>
 
 /*state structure:
- * typedef struct {
-    unsigned char V[32];   // current value (256 bits)
-    unsigned char C[32];   // constant (derived from seed)
-    uint64_t reseed_counter;
-} CSPRNG_State;
- *
- *
- *
  * Instantiation function:
- * 1. Get entropy_seed[48 bytes] from OS
+ * 1. Get entropy_seed[32 bytes] from OS
+ *
 2. V = SHA256(entropy_seed)
 3. C = SHA256(entropy_seed + 0x80)  // simple diversification
 4. reseed_counter = 1
@@ -28,7 +14,38 @@ loop:
 V = SHA256(V || C || new_entropy)
 C = SHA256(C || new_entropy)
 reseed_counter = 1
+*/
+void instantiation(void) {
+  CSPRNG_State *state = malloc(sizeof(CSPRNG_State));
+  // TODO: fix that
+  unsigned char temp[32];
+  get_seed(temp);
+  // for sure the whole thing must be decoded from char to diges,right?
+  SHA256(temp, 32, state->V);
+  SHA256(temp + 0x80, 32, state->C);
+  state->reseed_counter = 1;
+#if DEBUG
+  printf("!!!DEBUG!!! this is the random seed: %s\n", temp);
+  printf("!!!Debug!!! this is the current random V: %s\n", state->V);
+  printf("!!!DEBUG!!! this is the current random C: %s\n", state->C);
+#endif
+}
 
+void reset_entropy(CSPRNG_State *state) {
+  unsigned char new_entropy[32];
+  get_seed(new_entropy);
+  // FIXME: add the V C and the new entropy sequentially in memcpy
+  SHA256(state->V || state->C || new_entropy, 32, state->V);
+  state->reseed_counter = 1;
+}
+
+#if DEBUG
+int main(void) {
+  instantiation();
+  return 0;
+}
+#endif
+/*
  *generate function:
  while (bytes_needed > 0) {
     V = SHA256(V);
