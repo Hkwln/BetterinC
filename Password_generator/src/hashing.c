@@ -28,7 +28,6 @@ int pad_msg(uint8_t *pad_bin_msg, const uint8_t *binary, size_t message_len) {
     int_to_bit(pad_bin_msg, (blocks * 64) - 8, message_len * 8);
     return blocks * 64;
   }
-  // TODO: IF more than one block is needed
   return -1;
 }
 

@@ -13,3 +13,7 @@ Aim for this is to advance a simple basic password generator i coded a few years
 - lighning fast with pure C
 
 All done by myself - no code written by Ai - because it is fun to code :)
+
+## resources:
+
+(Recommendation for random number generation using deterministic random bit Generators)[https://nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-90ar1.pdf]

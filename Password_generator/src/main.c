@@ -1,3 +1,4 @@
+#include "csprng.h"
 #include "datastructure.h"
 #include <math.h>
 #include <stdbool.h>
@@ -11,7 +12,7 @@
  * random password length( 8 - 30 more likely)
  */
 void create_password(unsigned int length, _Bool numbers, _Bool specials,
-                     char **password) {
+                     char **password, CSPRNG_State *rng) {
   *password = malloc((length + 1) * sizeof(char));
   char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   int charset_size = sizeof(charset) - 1;
@@ -19,30 +20,34 @@ void create_password(unsigned int length, _Bool numbers, _Bool specials,
   int numberset_size = sizeof(numberset) - 1;
   char specialset[] = "@!§$%&/(=?)€*'-_<>|^°~+#";
   int specialset_size = sizeof(specialset) - 1;
+  size_t out_size = length * 2;
+  unsigned char out[out_size];
+  generate(rng, out, out_size);
+  size_t idx = 0;
   for (int i = 0; i < length; i++) {
-    int choice = rand() % 101;
+    int choice = out[idx++] % 101;
     if (numbers == true && specials == false) {
       if (choice <= 54) {
-        (*password)[i] = charset[rand() % charset_size];
+        (*password)[i] = charset[out[idx++] % charset_size];
       } else if (choice > 54 && choice <= 100) {
-        (*password)[i] = numberset[rand() % numberset_size];
+        (*password)[i] = numberset[out[idx++] % numberset_size];
       }
     } else if (numbers == true && specials == true) {
       if (choice <= 34) {
-        (*password)[i] = charset[rand() % charset_size];
+        (*password)[i] = charset[out[idx++] % charset_size];
       } else if (choice > 34 && choice <= 66) {
-        (*password)[i] = numberset[rand() % numberset_size];
+        (*password)[i] = numberset[out[idx++] % numberset_size];
       } else if (choice > 66 && choice <= 100) {
-        (*password)[i] = specialset[rand() % specialset_size];
+        (*password)[i] = specialset[out[idx++] % specialset_size];
       }
     } else if (numbers == false && specials == true) {
       if (choice <= 54) {
-        (*password)[i] = charset[rand() % charset_size];
+        (*password)[i] = charset[out[idx++] % charset_size];
       } else if (choice > 54 && choice <= 100) {
-        (*password)[i] = specialset[rand() % specialset_size];
+        (*password)[i] = specialset[out[idx++] % specialset_size];
       }
     } else {
-      (*password)[i] = charset[rand() % charset_size];
+      (*password)[i] = charset[out[idx++] % charset_size];
     }
   }
   (*password)[length] = '\0';
@@ -82,6 +87,7 @@ int add_umlaut(char **password) {
 
 void create_pronouncable(unsigned int length, char **password) {
   *password = malloc((length + 1) * sizeof(char));
+  (*password)[0] = '\0';
   // now we mesh together both functions: start random, then always switch
   // between umlaut and vocale
   int choice = rand() % 2;
@@ -154,19 +160,21 @@ struct information get_info() {
   return (struct information){lenght, numbers, specials, entropy};
 }
 
-int main() {
-  srand((unsigned int)(time(NULL) ^ (clock() << 12)));
+int main(void) {
+  CSPRNG_State *rng = instantiation();
   struct information info = get_info();
   char *password = NULL;
+  create_password(info.length, info.numbers, info.specials, &password, rng);
   char *p4ssword = NULL;
-  create_password(info.length, info.numbers, info.specials, &password);
+#if 0
   create_pronouncable(info.length, &p4ssword);
-
+#endif
   printf("this is your password:\n%s\ndifficulty: %f\n and this is your "
          "pronouncable password: \n%s\n",
          password, info.difficulty, p4ssword);
 
   free(password);
   free(p4ssword);
+  csprng_free(rng);
   return 0;
 }

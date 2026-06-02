@@ -1,13 +1,15 @@
 #pragma once
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
-#define DEBUG 1
-// Generel structure:
+#define DEBUG 0
+
+// General structure:
 /*V = seed (entropy from OS)
 counter = 0
-loop:
+while:
     data = V || counter
     output = SHA256(data)
     counter++
@@ -29,7 +31,31 @@ inline static void get_seed(unsigned char *buf) {
 #endif
   close(fd);
 }
-// INFO: ONLY NEEDED FOR DEBUG:
+
+/**
+ * TO free memory after use
+ * */
+void csprng_free(CSPRNG_State *state);
+
+/**
+ * to initialize csprng_state
+ * */
+CSPRNG_State *instantiation(void);
+
+/**
+ * This runction reseeds the randomnes, usage after multiple generate usage
+ * */
+void reseed_entropy(CSPRNG_State *state);
+
+/*
+ * Generates a random number
+ *
+ * @param  state - the csprng_state needed from the instantioation function
+ * @param out - here is the destination of the random number
+ * @param bytes_needed - the size of the output
+ * */
+void generate(CSPRNG_State *state, unsigned char *out, size_t bytes_needed);
+#if DEBUG
 //  helper function: length  of digest maximum 32 bytes
 extern inline bool digest_to_hex(const uint8_t *digest, size_t dig_len,
                                  char *out, size_t out_len) {
@@ -56,3 +82,4 @@ extern inline bool digest_to_hex(const uint8_t *digest, size_t dig_len,
 
   return 1;
 }
+#endif
