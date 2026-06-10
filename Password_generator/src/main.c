@@ -18,7 +18,7 @@ void create_password(unsigned int length, _Bool numbers, _Bool specials,
   int charset_size = sizeof(charset) - 1;
   char numberset[] = "1234567890";
   int numberset_size = sizeof(numberset) - 1;
-  char specialset[] = "@!§$%&/(=?)€*'-_<>|^°~+#";
+  char specialset[] = "@!$%&/(=?)*'-_<>|^~+#.,[]{};:\\`";
   int specialset_size = sizeof(specialset) - 1;
   size_t out_size = length * 2;
   unsigned char out[out_size];
