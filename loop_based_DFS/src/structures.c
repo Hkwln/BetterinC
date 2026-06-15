@@ -10,6 +10,7 @@
 
 #define MAX_SIZE 100
 
+struct Graph *gg = NULL;
 void init_fixed_graph(void) {
   if (gg == NULL) {
     // init graph:
@@ -26,6 +27,7 @@ void init_fixed_graph(void) {
   static int n2[] = {0, 3, 4};
   static int n3[] = {1};       // fourth node
   static int n4[] = {0, 1, 2}; // fith node
+                               // erwartbar bei start 0: 1; 4; 3; 0
   gg->adj[0] = n0;
   gg->adj_lengths[0] = 2;
   gg->adj[1] = n1;

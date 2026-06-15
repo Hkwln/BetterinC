@@ -1,4 +1,5 @@
 
+#include "dfs.h"
 #include "structures.h"
 
 int main(void) {
@@ -11,6 +12,7 @@ int main(void) {
   int lengths[] = {2, 2};
   add_x_nodes(2, list, lengths);
   print_test();
+  dfs();
   destroy_graph();
   return 0;
 }

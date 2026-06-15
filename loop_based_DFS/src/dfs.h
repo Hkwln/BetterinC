@@ -3,8 +3,10 @@
 #pragma once
 #include "structures.h"
 
-void push();
+void push(int node, int *stack, int *top, int *visided);
 
-void pop(void); // removes the node and returns the top noode
+int pop(int *stack, int *top); // removes the node and returns the top noode
 
-void is_empty();
+int is_empty(int top);
+
+void dfs(void);
