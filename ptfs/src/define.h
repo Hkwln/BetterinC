@@ -6,6 +6,7 @@
 #define PAGE_SIZE 4096  // should be 4Kb
 #define NUM_PAGES 20
 #define NUM_FRAMES 5
+#define MEM_SIZE (PAGE_SIZE * NUM_PAGES)
 #define READ (1 << 0)
 #define WRITE (1 << 1)
 #define EXECUTE (1 << 2)
@@ -29,13 +30,11 @@ typedef struct {
 static inline uint32_t virt_to_phys(uint32_t virt_addr, page_table_t* table)
 {
     // vfn = virtual frame number
-    uint32_t vfn = virt_addr / PAGE_SIZE;  //* vfn = 0 //ATTENTION: is this
-                                           // righ? vfn is almost always under
-                                           // 1; should i rather use a float?
+    uint32_t vfn = virt_addr / PAGE_SIZE;
     // TODO: bounds checking should i use errno? and which error code should i
     // use?
     if (vfn >= table->num_pages) {
-        printf("error, this entry is invalid\n");
+        printf("error, this entry is invalid vfn\n");
         return UINT32_MAX;
     }
     uint32_t offset = virt_addr % PAGE_SIZE;  //* offset = 100;
