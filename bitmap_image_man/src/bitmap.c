@@ -189,7 +189,7 @@ void print_bitmap_with_box(Bitmap *bmp, void *box_ptr, char *buf2) {
     buf[idx++] = '\n';
   }
   buf[idx] = '\0';
-  
+
   // Differential rendering: nur geänderte Zeilen ausgeben
   if (buf2 == NULL || buf2[0] == '\0') {
     // Erster Frame - alles ausgeben
@@ -201,7 +201,7 @@ void print_bitmap_with_box(Bitmap *bmp, void *box_ptr, char *buf2) {
     // Vergleiche zeilenweise und gebe nur Änderungen aus
     int buf_idx = 0;
     int buf2_idx = 0;
-    
+
     for (int line = 0; line < bmp->height; line++) {
       // Finde Start und Ende der aktuellen Zeile in buf
       int line_start = buf_idx;
@@ -210,7 +210,7 @@ void print_bitmap_with_box(Bitmap *bmp, void *box_ptr, char *buf2) {
       }
       int line_end = buf_idx;
       buf_idx++; // Skip \n
-      
+
       // Finde entsprechende Zeile in buf2
       int line2_start = buf2_idx;
       while (buf2[buf2_idx] != '\n' && buf2[buf2_idx] != '\0') {
@@ -218,12 +218,12 @@ void print_bitmap_with_box(Bitmap *bmp, void *box_ptr, char *buf2) {
       }
       int line2_end = buf2_idx;
       buf2_idx++; // Skip \n
-      
+
       // Vergleiche die Zeilen
       int line_len = line_end - line_start;
       int line2_len = line2_end - line2_start;
       bool lines_differ = (line_len != line2_len);
-      
+
       if (!lines_differ) {
         for (int i = 0; i < line_len; i++) {
           if (buf[line_start + i] != buf2[line2_start + i]) {
@@ -232,7 +232,7 @@ void print_bitmap_with_box(Bitmap *bmp, void *box_ptr, char *buf2) {
           }
         }
       }
-      
+
       // Wenn Zeile unterschiedlich ist, ausgeben
       if (lines_differ) {
         printf("\033[%d;1H", line + 1); // Cursor auf Zeile positionieren
@@ -240,11 +240,11 @@ void print_bitmap_with_box(Bitmap *bmp, void *box_ptr, char *buf2) {
       }
     }
     fflush(stdout);
-    
+
     // Update buf2 komplett für nächsten Frame
     strcpy(buf2, buf);
   }
-  
+
   free(buf);
 }
 
