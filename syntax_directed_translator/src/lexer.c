@@ -1,5 +1,7 @@
 #include "lexer.h"
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 // helper function to check if the char is a digit
 bool is_digit(char c) {
   if (c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' ||
@@ -46,12 +48,13 @@ Token next_token(const char **src) {
   } else if (c == '*') {
     token.type = TOKEN_STAR;
     return token;
+  } else if (c == '%') {
+    token.type = TOKEN_MODULO;
   } else if (c == '/') {
     token.type = TOKEN_SLASH;
     return token;
   } else if (c == '(') {
     token.type = TOKEN_LPAREN;
-
     return token;
   } else if (c == ')') {
     token.type = TOKEN_RPAREN;
@@ -74,9 +77,18 @@ Token next_token(const char **src) {
     token.type = TOKEN_ASSIGN;
   } else if (is_letter(c) || c == '_') {
     token.type = TOKEN_IDENT;
+    char ex[] = "exit";
     int i = 0;
     token.name[i++] = c;
+    int count = 0;
     while (is_letter(**src) || **src == '_') {
+      if (**src == ex[i] && count >= i) {
+        printf("current exit count: %d\n", count);
+        count++;
+        if (i <= 3 && count == 4)
+          token.type = TOKEN_EXIT;
+        exit(0);
+      }
       token.name[i++] = **src;
       (*src)++;
     }
@@ -96,6 +108,9 @@ const char *token_to_string(TokenType type) {
   case (TOKEN_STAR):
     // return "STAR, ";
     return "*";
+  case (TOKEN_MODULO):
+    // return "MODULO, ";
+    return "%";
   case (TOKEN_SLASH):
     // return "SLASH, ";
     return "/";

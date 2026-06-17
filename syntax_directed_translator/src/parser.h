@@ -13,6 +13,6 @@ struct Result {
   bool is_literal;
 };
 struct Result expr(void);   /* verarbeitet + und - */
-struct Result term(void);   /* verarbeitet * und / */
+struct Result term(void);   /* verarbeitet * und /  und %*/
 struct Result factor(void); /* verarbeitet Zahlen und geklammerte Ausdrücke */
 void stmt(void);            /* verarbeitet: variable = zuweisung*/

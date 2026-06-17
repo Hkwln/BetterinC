@@ -56,7 +56,8 @@ struct Result factor(void) {
 // handles */
 struct Result term(void) {
   struct Result left = factor();
-  while (lookahead.type == TOKEN_SLASH || lookahead.type == TOKEN_STAR) {
+  while (lookahead.type == TOKEN_SLASH || lookahead.type == TOKEN_STAR ||
+         lookahead.type == TOKEN_MODULO) {
     TokenType token = lookahead.type;
     advance();
     struct Result right = factor();
@@ -80,6 +81,9 @@ struct Result term(void) {
       symtable_set(left.var_name, left.value);
     } else if (token == TOKEN_STAR) {
       left.value *= right.value;
+      symtable_set(left.var_name, left.value);
+    } else if (token == TOKEN_MODULO) {
+      left.value %= right.value;
       symtable_set(left.var_name, left.value);
     }
   }
@@ -136,8 +140,10 @@ void stmt(void) {
         printf("%s\n", res.var_name);
       }
       symtable_set(name, res.value);
+      // following is temp
+      printf("%s: %d\n", res.var_name, res.value);
     } else {
-      printf("error falsche grammatik");
+      puts("error falsche grammatik");
     }
   } else {
     expr();

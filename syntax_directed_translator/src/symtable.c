@@ -15,13 +15,14 @@ void symtable_set(const char *name, int value) {
   table[table_size].value = value;
   table_size++;
 }
+
 void sym_edit_set(const char *name, int value) {
   for (int i = 0; i < table_size; i++) {
     if (strcmp(table[i].name, name) == 0) {
       table[i].value = value;
     }
   }
-  exit(1);
+  exit(0);
 }
 // limit min = no match
 // else match

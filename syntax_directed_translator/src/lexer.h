@@ -5,12 +5,14 @@ typedef enum {
   TOKEN_MINUS,
   TOKEN_STAR,
   TOKEN_SLASH,
+  TOKEN_MODULO,
   TOKEN_LPAREN,
   TOKEN_RPAREN,
   TOKEN_EOF,
   TOKEN_IDENT,
   TOKEN_ASSIGN,
-  TOKEN_COMMA
+  TOKEN_COMMA,
+  TOKEN_EXIT
 } TokenType;
 
 typedef struct {
