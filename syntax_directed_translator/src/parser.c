@@ -9,6 +9,7 @@ char *current_result_temp = NULL;
 struct Result expr();
 void stmt(void); /**/
 int tmp_count = 0;
+
 /* INFO: erste zwei funktionen sind hilffunktionen:*/
 char *new_temp(void) {
   static char buf[128];
@@ -27,7 +28,8 @@ void match(TokenType expected) {
     advance();
   }
 }
-// handles ()
+
+//  handles ()
 struct Result factor(void) {
   struct Result val = {0};
   if (lookahead.type == TOKEN_NUMBER) {
@@ -42,6 +44,9 @@ struct Result factor(void) {
     advance();
     if (val.value != INT_MIN) {
       return val;
+    } else {
+      fprintf(stderr, "ERROR: '%s' used before assignement\n", val.var_name);
+      exit(1);
     }
   } else if (lookahead.type == TOKEN_LPAREN) {
     advance();
@@ -142,11 +147,15 @@ void stmt(void) {
       symtable_set(name, res.value);
       // following is temp
       printf("%s: %d\n", res.var_name, res.value);
+    } else if (lookahead.type == TOKEN_EXIT) {
+      advance();
+      exit(1);
     } else {
       puts("error falsche grammatik");
     }
   } else {
-    expr();
+    struct Result res = expr();
+    printf("RESULT: %d\n", res.value);
   }
   if (lookahead.type == TOKEN_COMMA) {
     // printf("\n");
@@ -154,6 +163,7 @@ void stmt(void) {
     stmt();
   }
 }
+
 #if 0
 Token lookahead;
 const char *cursor;

@@ -1,6 +1,5 @@
 #include "symtable.h"
 #include <limits.h>
-#include <stdlib.h>
 #include <string.h>
 
 Symbol table[64];
@@ -9,6 +8,13 @@ int table_size = 0;
 void symtable_set(const char *name, int value) {
   int i = 0;
   while (*name != '\0') {
+    // check if new entrie variable already exists:
+    for (int b = 0; b < table_size; b++) {
+      if (strcmp(table[b].name, name) == 0) {
+        table[b].value = value;
+        return;
+      }
+    }
     table[table_size].name[i++] = *name++;
   }
   table[table_size].name[i] = '\0';
@@ -22,7 +28,7 @@ void sym_edit_set(const char *name, int value) {
       table[i].value = value;
     }
   }
-  exit(0);
+  return;
 }
 // limit min = no match
 // else match
