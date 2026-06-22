@@ -1,33 +1,13 @@
 #include "parser.h"
 #include "lexer.h"
 #include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
+// TODO: implement comparison operators:
 char *current_result_temp = NULL;
 struct Result expr();
 void stmt(void); /**/
 int tmp_count = 0;
-
-/* INFO: erste zwei funktionen sind hilffunktionen:*/
-char *new_temp(void) {
-  static char buf[128];
-  static int offset = 0;
-  char *result = buf + offset;
-  offset += sprintf(result, "t%d", ++tmp_count) + 1;
-  if (offset >= 120)
-    offset = 0;
-  return result;
-}
-void match(TokenType expected) {
-  if (lookahead.type != expected) {
-    fprintf(stderr, "error this does not match \n");
-    exit(1);
-  } else {
-    advance();
-  }
-}
 
 //  handles ()
 struct Result factor(void) {
@@ -126,18 +106,45 @@ struct Result expr(void) {
   }
   return left;
 }
+// check for comparison functions return int min if no comparison operator is
+// existent
+struct Result compar(void) {
+  struct Result left = expr();
+  if (lookahead.type == TOKEN_EQ || lookahead.type == TOKEN_NE ||
+      lookahead.type == TOKEN_LT || lookahead.type == TOKEN_LE ||
+      lookahead.type == TOKEN_GT || lookahead.type == TOKEN_GE) {
+    struct Result res;
+    TokenType token = lookahead.type;
+    advance();
+    struct Result right = expr();
+    // CURRNETly < and > work not the rest?
+    if (token == TOKEN_EQ)
+      res.value = left.value == right.value;
+    else if (token == TOKEN_NE)
+      res.value = left.value != right.value;
+    else if (token == TOKEN_LT)
+      res.value = left.value < right.value;
+    else if (token == TOKEN_LE)
+      res.value = left.value <= right.value;
+    else if (token == TOKEN_GT)
+      res.value = left.value > right.value;
+    else if (token == TOKEN_GE)
+      res.value = left.value >= right.value;
+    res.val_is_bool = true;
+    return res;
+  }
+  return left;
+}
 // check if it is a stmt
 void stmt(void) {
   if (lookahead.type == TOKEN_IDENT) {
-    // printf("%s ", lookahead.name);
-    //  now we expect a =
     char name[64];
     strcpy(name, lookahead.name);
     advance();
     if (lookahead.type == TOKEN_ASSIGN) {
       // printf("%s ", token_to_string(TOKEN_ASSIGN));
       advance();
-      struct Result res = expr();
+      struct Result res = compar();
       printf("%s = ", name);
       if (res.is_literal) {
         printf("%d\n", res.value);
@@ -145,26 +152,24 @@ void stmt(void) {
         printf("%s\n", res.var_name);
       }
       symtable_set(name, res.value);
-      // following is temp
-      printf("%s: %d\n", res.var_name, res.value);
+      printf("RESULT: %d\n", res.value);
     } else if (lookahead.type == TOKEN_EXIT) {
       advance();
-      exit(1);
     } else {
       puts("error falsche grammatik");
     }
   } else {
-    struct Result res = expr();
+    struct Result res = compar();
     printf("RESULT: %d\n", res.value);
   }
   if (lookahead.type == TOKEN_COMMA) {
-    // printf("\n");
     advance();
     stmt();
   }
 }
 
 #if 0
+//DEBUG:
 Token lookahead;
 const char *cursor;
 int main(void) {
