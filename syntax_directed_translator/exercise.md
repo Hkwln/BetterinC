@@ -2,14 +2,13 @@
 
 AIM for this project:
 
-Implement == != < > (Dragon book 2.6 4.2)
 implement if / while with jump code ( 2.9)
 //fix so that this behaviour is valid:
 4+x = 10-2
 
 It would be a DREAM if this project turns into a real C-compiler
 
-### TODO: DOES it matter?
+### TODO: DOES it matter? -- needs a AST
 
 What should be the case:
 a+a*(b-c)+(b-c) * d;

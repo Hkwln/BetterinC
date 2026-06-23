@@ -5,11 +5,12 @@
 
 #include "lexer.h"
 
-// TODO: implement if statement
+// TODO: implement if/while statement
 char* current_result_temp = NULL;
 struct Result expr();
 void stmt(void); /**/
 int tmp_count = 0;
+int label_count = 0;
 
 //  handles ()
 struct Result factor(void)
@@ -130,7 +131,7 @@ struct Result compar(TokenType statement)
             strcpy(res.var_name, temp);
             printf("%s = %s %s %s\n", temp, left.var_name,
                    token_to_string(token), right.var_name);
-        } else if (statement == TOKEN_IF || TOKEN_WHILE) {
+        } else if (statement == TOKEN_IF || statement == TOKEN_WHILE) {
             if (statement == TOKEN_WHILE) {
                 printf("%s: begin", new_label());
             }
@@ -189,13 +190,43 @@ void stmt(void)
         } else {
             puts("error falsche grammatik");
         }
+    } else if (lookahead.type == TOKEN_COMMA) {
+        advance();
+        stmt();
+    } else if (lookahead.type == TOKEN_IF || lookahead.type == TOKEN_WHILE) {
+        struct Result res;
+        TokenType token = lookahead.type;
+        printf("%s", token_to_string(TOKEN_IF));
+        advance();
+        if (lookahead.type == TOKEN_LPAREN) {
+            struct Result B;
+            struct Result S1;
+            if (token == TOKEN_IF) {
+                // FIX: don't evaluate at runtime
+                if ((B = compar(token)).value == 1) {
+                    match(TOKEN_RPAREN);
+                    S1 = expr();
+                }
+                match(TOKEN_RPAREN);
+            } else if (token == TOKEN_WHILE) {
+                // FIX: don't evaluate at runtime
+                while ((B = compar(token)).value == 1) {
+                    match(TOKEN_RPAREN);
+                    S1 = expr();
+                    match(TOKEN_RPAREN);
+                }
+                match(TOKEN_RPAREN);
+            }
+            printf("%s: ", B.f_label);
+            res.value = S1.value;
+        } else {
+            fprintf(stderr, "error false if grammar\n ");
+            exit(1);
+        }
+        printf("RESULT: %d\n", res.value);
     } else {
         struct Result res = compar(0);
         printf("RESULT: %d\n", res.value);
-    }
-    if (lookahead.type == TOKEN_COMMA) {
-        advance();
-        stmt();
     }
 }
 
