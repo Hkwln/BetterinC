@@ -9,6 +9,25 @@ implement if / while with jump code ( 2.9)
 
 It would be a DREAM if this project turns into a real C-compiler
 
+### TODO: DOES it matter?
+
+What should be the case:
+a+a*(b-c)+(b-c) * d;
+t_1 = b+c;
+t_2 = a* t_1;
+t_3 = a+ t_2;
+t_4 = t_1*d;
+t_5 = t_3+t_4;
+
+MY program:
+a+a*(b-c)+(b-c) * d;
+t_1 = b+c;
+t_2 = a* t_1;
+t_3 = a+ t_2;
+t_4 = b+c; +++++
+t_5 = t_4*d;
+t_6 = t_3+t_4;
+
 ## Infix-Ausdruck → Intermediate Code (mit Variablen & Symbol Table)
 
 > Ziel: Du erweiterst deinen mini-Übersetzer schrittweise bis zu einem echten

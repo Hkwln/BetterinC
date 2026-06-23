@@ -27,7 +27,10 @@ typedef enum {
   TOKEN_GE,     // >=
   // not yet active
   TOKEN_AND, // &&
-  TOKEN_OR   // ||
+  TOKEN_OR,  // ||
+  // statements:
+  TOKEN_WHILE,
+  TOKEN_IF
 } TokenType;
 
 typedef struct {
@@ -78,9 +81,11 @@ static inline const char *token_to_string(TokenType type) {
     // return "SLASH, ";
     return "/";
   case (TOKEN_LPAREN):
-    return "Lparen, ";
+    // return "Lparen";
+    return "(";
   case (TOKEN_RPAREN):
-    return "Rparen, ";
+    // return "Rparen";
+    return ")";
   case (TOKEN_NUMBER):
     return "Number";
   case (TOKEN_EOF):
@@ -109,6 +114,10 @@ static inline const char *token_to_string(TokenType type) {
     return "&&";
   case (TOKEN_OR):
     return "||";
+  case (TOKEN_WHILE):
+    return "while";
+  case (TOKEN_IF):
+    return "if";
   default:
     return "UNKNOWN";
   }

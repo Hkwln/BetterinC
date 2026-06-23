@@ -64,6 +64,10 @@ Token next_token(const char **src) {
     token.name[i] = '\0';
     if (strcmp(token.name, "exit") == 0) {
       token.type = TOKEN_EXIT;
+    } else if (strcmp(token.name, "while") == 0) {
+      token.type = TOKEN_WHILE;
+    } else if (strcmp(token.name, "if") == 0) {
+      token.type = TOKEN_IF;
     }
     return token;
   }
@@ -91,7 +95,6 @@ Token next_token(const char **src) {
     return token;
   } else if (c == '!') { // needs a fix 4!= 3 RESULT: 4
     token.type = TOKEN_NOT;
-    (*src)++;
     if (**src == '=') {
       token.type = TOKEN_NE;
       (*src)++;
