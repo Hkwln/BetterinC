@@ -1,11 +1,13 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+
 typedef struct {
   size_t lines;
   size_t chars;
   size_t numberoffiles;
 } fileinfo;
+
 // TODO: add error handling
 int main(int argc, char **argv) {
   // initialize fileinfo:

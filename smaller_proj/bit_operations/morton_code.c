@@ -1,10 +1,6 @@
 // aim is to implement a morton code x1y1x2y2 usw.
-#include <stdint.h>
+#include "morton_code.h"
 #include <stdio.h>
-typedef struct {
-  uint16_t x;
-  uint16_t y;
-} both_seperated;
 
 uint32_t morton_encode(uint16_t x, uint16_t y) {
   uint32_t both = 0;
@@ -14,12 +10,13 @@ uint32_t morton_encode(uint16_t x, uint16_t y) {
   return both;
 }
 
-both_seperated morton_decode(uint32_t both) {
-  both_seperated sep;
+coordinates_t morton_decode(uint32_t both) {
+  coordinates_t sep;
   sep.x = 0;
   sep.y = 0;
+  int power;
   for (int i = 0; i < 32; i++) {
-    int power = 1 << i;
+    power = 1 << i;
     if ((both & power) != 0) {
       // set x or y to 1;
       if (i % 2 == 0) {
@@ -31,12 +28,13 @@ both_seperated morton_decode(uint32_t both) {
   }
   return sep;
 }
-int main() {
+
+int main(void) {
   uint32_t morton = morton_encode(17, 111);
-  printf("both: %u \n", morton); // 3
-  both_seperated sep = morton_decode(morton);
+  printf("both: %u \n", morton); // 10667
+  coordinates_t sep = morton_decode(morton);
   printf("x: %u \n", sep.x); // 17
-  printf("x: %u \n", sep.y); // 111
+  printf("y: %u \n", sep.y); // 111
   return 0;
 }
 

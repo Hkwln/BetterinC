@@ -106,7 +106,7 @@ Token next_token(const char** src)
     return token;
 }
 
-#if 1
+#if 0
 // testing
 #include <stdio.h>
 int main(void)

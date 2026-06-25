@@ -12,10 +12,10 @@ void stmt(void); /**/
 int tmp_count = 0;
 int label_count = 0;
 
-//  handles ()
+//  handles () numbers and identifiers
 struct Result factor(void)
 {
-    struct Result val = {0};
+    struct Result val;
     if (lookahead.type == TOKEN_NUMBER) {
         val.value = lookahead.value;
         val.is_literal = true;
@@ -36,7 +36,7 @@ struct Result factor(void)
     } else if (lookahead.type == TOKEN_LPAREN) {
         // maybe check if this expression was there before
         advance();
-        val = expr();
+        val = compar(0);
         match(TOKEN_RPAREN);
         return val;
     } else {
@@ -129,8 +129,19 @@ struct Result compar(TokenType statement)
         if (statement == 0) {
             char* temp = new_temp();
             strcpy(res.var_name, temp);
-            printf("%s = %s %s %s\n", temp, left.var_name,
-                   token_to_string(token), right.var_name);
+            printf("%s = ", temp);
+            if (left.is_literal) {
+                printf("%d", left.value);
+            } else {
+                printf("%s", left.var_name);
+            }
+            printf(" %s ", token_to_string(token));
+            if (right.is_literal) {
+                printf("%d", right.value);
+            } else {
+                printf("%s", right.var_name);
+            }
+            printf("\n");
         } else if (statement == TOKEN_IF || statement == TOKEN_WHILE) {
             if (statement == TOKEN_WHILE) {
                 printf("%s: begin", new_label());
@@ -203,19 +214,18 @@ void stmt(void)
             struct Result S1;
             if (token == TOKEN_IF) {
                 // FIX: don't evaluate at runtime
-                if ((B = compar(token)).value == 1) {
-                    match(TOKEN_RPAREN);
+                B = compar(token);
+                match(TOKEN_RPAREN);
+                if (B.value == 1) {
                     S1 = expr();
                 }
-                match(TOKEN_RPAREN);
             } else if (token == TOKEN_WHILE) {
                 // FIX: don't evaluate at runtime
-                while ((B = compar(token)).value == 1) {
-                    match(TOKEN_RPAREN);
-                    S1 = expr();
-                    match(TOKEN_RPAREN);
-                }
+                B = compar(token);
                 match(TOKEN_RPAREN);
+                while (B.value == 1) {
+                    S1 = expr();
+                }
             }
             printf("%s: ", B.f_label);
             res.value = S1.value;

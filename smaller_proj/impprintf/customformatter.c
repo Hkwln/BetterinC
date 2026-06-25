@@ -1,16 +1,10 @@
-
-#include <stdarg.h>
+#include "customformatter.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-typedef void (*formatter_fn)(va_list *args, char *string, size_t *pos,
-                             size_t buf_len);
-typedef struct {
-  char key;
-  formatter_fn fn;
-} FormatEntry;
+
 void fmt_int(va_list *args, char *string, size_t *pos, size_t buf_len) {
   int num = va_arg(*args, int);
   bool isNEG = num < 0;
@@ -68,7 +62,7 @@ void fmt_hex(va_list *args, char *string, size_t *pos, size_t buf_len) {
   *pos += strlen(hex_string);
 }
 
-void my_format(char *buf, size_t buf_len, const char *fmt, ...) {
+void snformat(char *buf, size_t buf_len, const char *fmt, ...) {
   FormatEntry table[] = {{'d', fmt_int}, {'s', fmt_str}, {'x', fmt_hex}};
   va_list args;
   va_start(args, fmt);
@@ -98,12 +92,41 @@ void my_format(char *buf, size_t buf_len, const char *fmt, ...) {
   }
   va_end(args);
   buf[pos] = '\0';
-  printf("%s\n", buf);
-  // write(STDOUT_FILENO, buf, buf_len);
 }
-int main(void) {
-  char buf[3000];
-  // test:
-  my_format(buf, sizeof(buf), "value: %d hex: %x name: %s", 42, 255, "Alice");
-  return 0;
+void format(const char *fmt, ...) {
+  size_t buf_len = 3000;
+  char *buf = malloc(buf_len);
+  FormatEntry table[] = {
+      {'d', fmt_int}, {'s', fmt_str}, {'x', fmt_hex}, {'c', fmt_str}};
+  va_list args;
+  va_start(args, fmt);
+  buf[0] = '\0';
+  size_t pos = 0;
+  formatter_fn fn = NULL;
+  for (size_t i = 0; fmt[i] != '\0'; i++) {
+    if (fmt[i] == '%') {
+      for (size_t b = 0; b < sizeof(table) / sizeof(table[0]); b++) {
+        if (fmt[i + 1] == table[b].key) {
+          fn = table[b].fn;
+          break;
+        }
+      }
+      if (fn) {
+        fn(&args, buf, &pos, buf_len);
+        i++;
+      } else {
+        buf[pos++] = fmt[i];
+      }
+
+    } else {
+      buf[pos++] = fmt[i];
+    }
+    if (pos % 10 && pos >= buf_len - 10) {
+      buf_len *= 2;
+      buf = realloc(buf, buf_len * 2);
+    }
+  }
+  va_end(args);
+  buf[pos] = '\0';
+  write(STDOUT_FILENO, buf, pos);
 }
