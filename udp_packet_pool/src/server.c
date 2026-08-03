@@ -34,7 +34,6 @@ int create_udp_socket(char *port) {
   }
   socketfd = socket(AF_INET, SOCK_DGRAM, 0);
   if (socketfd == -1) {
-
     fprintf(stderr, "%d: %s \n", errno, strerror(errno));
     exit(1);
   }

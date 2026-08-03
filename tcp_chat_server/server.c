@@ -14,9 +14,21 @@ Pseudocode:
     close(client_fd)
     close(server_fd)
  * */
+
+#include <netdb.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 
-int main() {
+int create_tcp_socket(char *port) {
+  struct socket_addr_in server_in;
+  struct addrinfo *res;
+  struct addrinfo hints;
   int serverfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+  return 1;
+}
+
+int main() {
+  int server_socket = create_tcp_socket("8888");
   return 0;
 }
