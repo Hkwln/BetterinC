@@ -3,13 +3,14 @@
 #define DFA_H
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 typedef struct {
   uint16_t mask; // only bits 0...9 used;
   bool z;
 } state_t;
 
-bool is_friendly(const char *digits);
+state_t is_friendly(const char *digits);
 
 state_t state_new(void); // returns the initial state
 state_t

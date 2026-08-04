@@ -11,14 +11,14 @@ void setUp(void) {}
 void tearDown(void) {}
 
 void test_is_friendly(void) {
-  TEST_ASSERT_TRUE(!is_friendly("9"));
-  TEST_ASSERT_TRUE(!is_friendly("100"));
-  TEST_ASSERT_TRUE(!is_friendly("0"));
-  TEST_ASSERT_TRUE(!is_friendly("111111111"));
-  TEST_ASSERT_TRUE(is_friendly("19"));
-  TEST_ASSERT_TRUE(is_friendly("3523014"));
-  TEST_ASSERT_TRUE(is_friendly("1919"));
-  TEST_ASSERT_TRUE("195482");
+  TEST_ASSERT_FALSE(is_friendly("9").z);
+  TEST_ASSERT_FALSE(is_friendly("100").z);
+  TEST_ASSERT_FALSE(is_friendly("0").z);
+  TEST_ASSERT_FALSE(is_friendly("111111111").z);
+  TEST_ASSERT_TRUE(is_friendly("19").z);
+  TEST_ASSERT_TRUE(is_friendly("3523014").z);
+  TEST_ASSERT_TRUE(is_friendly("1919").z);
+  TEST_ASSERT_TRUE(is_friendly("195482").z);
 }
 
 void test_logik_works(void) {
@@ -38,7 +38,8 @@ void test_logik_works(void) {
 }
 
 void test_dfs_works(void) {
-  state_t *state_out = malloc(500 * sizeof(state_out));
+  size_t size = 1024;
+  state_t *state_out = malloc(size);
   TEST_ASSERT_EQUAL_INT(bfs_state(state_out), 474);
   free(state_out);
 }
