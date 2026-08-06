@@ -10,10 +10,16 @@ state_t is_friendly(const char *digits) {
   return state;
 }
 
-state_t state_new(void) { return (state_t){0, true}; }
+// initial state: empty string, nothing uncovered yet -> uncovered == 0 (z ==
+// true)
+state_t state_new(void) { return (state_t){0, 0}; }
 
 state_t state_next(state_t current, int digit) {
 
+  // bit r-1 of the mask means: some suffix has digit sum (10 - r) mod 10,
+  // i.e. r more digit-sum is needed to reach a positive multiple of 10.
+  // Such a promise completes exactly when the new digit equals that
+  // remaining sum (r == digit) -> the string becomes friendly.
   bool completion = (digit > 0) && ((current.mask & (1 << (digit - 1))) != 0);
 
   state_t state_next;
@@ -24,34 +30,39 @@ state_t state_next(state_t current, int digit) {
       if (r > digit) {
         state_next.mask |= (1 << ((r - digit) - 1));
       }
-      // TODO: handle something like 195482 where after number 8 the number
-      // cannot be 10 substring friendly
-      // if r == digit, promise completes and is dropped
-      // if r < digit, promise dies (exceeds 10) -> dropped
     }
   }
   int new_r = 10 - digit;
   state_next.mask |= (1 << (new_r - 1));
-  state_next.z = completion;
+  // update uncovered counter: 0 == z (friendly), 11 == dead state
+  if (completion) {
+    state_next.uncovered = 0; // last digit completed a promise
+  } else if (current.uncovered < 11) {
+    state_next.uncovered = current.uncovered + 1; // one more uncovered digit
+  } else {
+    state_next.uncovered = 11; // capped at the dead state
+  }
   return state_next;
 }
 
 bool state_equal(state_t a, state_t b) {
   if (a.mask == b.mask) {
-    if (a.z == b.z)
+    if (a.uncovered == b.uncovered)
       return true;
   }
   return false;
 }
 
 // TODO: test state_hash
-uint32_t state_hash(state_t s) { return (s.mask << 1) | s.z; }
+// injective over (mask, uncovered): mask (0..1023) x uncovered (0..11) ->
+// 0..12287
+uint32_t state_hash(state_t s) { return (uint32_t)s.mask * 12 + s.uncovered; }
 
 int bfs_state(state_t *states_out) {
-  // perfect hash size: mask (0..1023) shifted left 1, plus z (0/1) → 0..2047
-  bool visited[2048] = {false};
+  // perfect hash size: 1024 masks x 12 uncovered values -> 0..12287
+  bool visited[12288] = {false};
 
-  state_t queue[2048]; // safely holds all states
+  state_t queue[12288]; // safely holds all states
   int head = 0, tail = 0;
   int count = 0;
 
@@ -76,9 +87,9 @@ int bfs_state(state_t *states_out) {
   return count;
 }
 
-#if 1
+#if 0
 int main(void) {
-  state_t *out = malloc(2048 * sizeof(state_t));
+  state_t *out = malloc(12288 * sizeof(state_t));
   if (!out) {
     fprintf(stderr, "memory allocation failed\n");
   }

@@ -6,8 +6,8 @@
 #include <stdio.h>
 
 typedef struct {
-  uint16_t mask; // only bits 0...9 used;
-  bool z;
+  uint16_t mask;     // only bits 0...9 used;
+  uint8_t uncovered; // if uncovered == 0 z = true
 } state_t;
 
 state_t is_friendly(const char *digits);
