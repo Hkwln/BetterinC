@@ -23,15 +23,21 @@ void test_is_friendly(void) {
 
 void test_logik_works(void) {
   state_t test1 = state_new();
+#ifdef verbose
   printf("mask=%d, uncovered=%b\n", test1.mask, test1.uncovered);
+#endif
   TEST_ASSERT_EQUAL_INT(test1.mask, 0);
   TEST_ASSERT_TRUE(test1.uncovered == 0);
   state_t next = state_next(test1, 1);
+#ifdef verbose
   printf("mask= %d(256 expected), uncovered=%b\n", next.mask, next.uncovered);
+#endif
   TEST_ASSERT_EQUAL_INT(next.mask, 256);
   TEST_ASSERT_FALSE(next.uncovered == 0);
   next = state_next((state_t){256, 0}, 9);
+#ifdef verbose
   printf("mask=%d, uncovered=%b\n", next.mask, next.uncovered);
+#endif
   TEST_ASSERT_EQUAL_INT(next.mask, 1);
   TEST_ASSERT_TRUE(next.uncovered == 0);
   TEST_ASSERT_TRUE(state_equal(next, (state_t){1, 0}));

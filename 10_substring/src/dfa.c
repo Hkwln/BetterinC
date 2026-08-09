@@ -89,12 +89,12 @@ int bfs_state(state_t *states_out) {
 
 #if 0
 int main(void) {
-  state_t *out = malloc(12288 * sizeof(state_t));
-  if (!out) {
-    fprintf(stderr, "memory allocation failed\n");
+  state_t out = state_new();
+  printf("the state uncovered look like this:\n");
+  for (int i; i < 10; i++) {
+    state_t cur = state_next((state_t)out, i);
+    printf("{%d, %d}\n", cur.mask, cur.uncovered);
   }
-  printf("number of states: %d\n", bfs_state(out));
-  free(out);
   return 0;
 }
 
