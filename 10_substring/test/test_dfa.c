@@ -15,6 +15,7 @@ void test_is_friendly(void) {
   TEST_ASSERT_FALSE(is_friendly("100").uncovered == 0);
   TEST_ASSERT_FALSE(is_friendly("0").uncovered == 0);
   TEST_ASSERT_FALSE(is_friendly("111111111").uncovered == 0);
+  TEST_ASSERT_FALSE(is_friendly("19819").uncovered == 0);
   TEST_ASSERT_TRUE(is_friendly("19").uncovered == 0);
   TEST_ASSERT_TRUE(is_friendly("3523014").uncovered == 0);
   TEST_ASSERT_TRUE(is_friendly("1919").uncovered == 0);
@@ -48,7 +49,11 @@ void test_bfs_works(void) {
   size_t size = 12288;
   state_t *state_out = malloc(size * sizeof(state_t));
   TEST_ASSERT_NOT_NULL(state_out);
-  TEST_ASSERT_EQUAL_INT(bfs_state(state_out), 11765);
+  int num = bfs_state(state_out);
+#ifdef verbose
+  printf("%d\n", num);
+#endif
+  TEST_ASSERT_EQUAL_INT(num, 11765);
   free(state_out);
 }
 #endif // TEST

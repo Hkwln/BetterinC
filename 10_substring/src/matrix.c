@@ -4,25 +4,28 @@
 // now is finally the time to start working on matrix stuff --- :)
 
 int **construct_transition_matrix(state_t *possible_states, size_t count) {
-  int row = count, cols = count;
-  int **t_matrix = malloc(row * sizeof(int *));
-  for (int i = 0; i < row; i++) {
-    t_matrix[i] = calloc(cols, sizeof(int));
+  // state_hash is injective over (mask, uncovered): mask (0..1023) x
+  // uncovered (0..11) -> 0..12287, so a plain array maps a state's hash
+  // directly to its position in the list -- no collision handling needed.
+  int hash_to_index[12288];
+  for (int h = 0; h < 12288; h++) {
+    hash_to_index[h] = -1;
+  }
+  for (size_t i = 0; i < count; i++) {
+    hash_to_index[state_hash(possible_states[i])] = (int)i;
   }
 
-  int v_index = -1;
-  size_t u = 0;
-  for (int i = 0; i < count; i++) {
+  int **t_matrix = malloc(count * sizeof(int *));
+  for (size_t i = 0; i < count; i++) {
+    t_matrix[i] = calloc(count, sizeof(int));
+  }
+
+  for (size_t i = 0; i < count; i++) {
     for (int v = 0; v < 10; v++) {
-      state_t state_nxt = state_next(possible_states[i], v);
-      for (int j = 0; j < 9; j++) {
-        if (state_equal(state_nxt, possible_states[j])) {
-          v_index = j;
-          break;
-        }
-      }
-      if (v_index != -1)
-        t_matrix[i][v_index] += 1;
+      state_t nxt = state_next(possible_states[i], v);
+      int target = hash_to_index[state_hash(nxt)];
+      if (target != -1) // skip if the list is not transition-closed
+        t_matrix[i][target] += 1;
     }
   }
   return t_matrix;

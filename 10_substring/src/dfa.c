@@ -86,16 +86,3 @@ int bfs_state(state_t *states_out) {
   }
   return count;
 }
-
-#if 0
-int main(void) {
-  state_t out = state_new();
-  printf("the state uncovered look like this:\n");
-  for (int i; i < 10; i++) {
-    state_t cur = state_next((state_t)out, i);
-    printf("{%d, %d}\n", cur.mask, cur.uncovered);
-  }
-  return 0;
-}
-
-#endif

@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// INFO: jus a helper function
+// INFO: just a helper function
 int **allocate_and_copy(int src[3][3]) {
   int **dest = malloc(3 * sizeof(int *)); // Allocate array of pointers
   for (int i = 0; i < 3; i++) {
@@ -24,28 +24,33 @@ void setUp(void) {}
 
 void tearDown(void) {}
 
-void test_transition_matrix(void) {
-  state_t state[7] = {{0, 0},  {2, 1},   {4, 1},  {16, 1},
-                      {64, 1}, {128, 1}, {256, 1}};
-  int **t_matrix = construct_transition_matrix(state, 7);
-  size_t count = 0;
-  for (int i = 0; i < 8; i++) {
-    count += t_matrix[2][i];
+void test_matrix_matches_reference(void) {
+  state_t *states = malloc(12288 * sizeof(state_t));
+  int n = bfs_state(states);
+
+  int h2i[12288];
+  for (int i = 0; i < n; i++)
+    h2i[state_hash(states[i])] = i;
+
+  int **M = construct_transition_matrix(states, n);
+
+  for (int i = 0; i < n; i++) {
+    int row_sum = 0;
+    for (int j = 0; j < n; j++)
+      row_sum += M[i][j];
+    TEST_ASSERT_EQUAL_INT(10, row_sum); // catches lost transitions
+    for (int d = 0; d < 10; d++) {
+      int target = h2i[state_hash(state_next(states[i], d))];
+      TEST_ASSERT_TRUE(M[i][target] >= 1); // catches wrong-column writes
+    }
   }
-  TEST_ASSERT_TRUE(count == 10);
 
-  TEST_ASSERT_TRUE(t_matrix[0][3] != 0);
-
-#if 0
-    // TODO:
-  size_t size = 12288;
-  state_t *out = calloc(size, sizeof(state_t));
-  int count = bfs_state(out);
-  int **matrix = construct_transition_matrix(out, count);
-  free(out);
-#endif
+  for (int i = 0; i < n; i++) {
+    free(M[i]);
+  }
+  free(M);
+  free(states);
 }
-
 void test_matrix_multiplication(void) {
 
   int a[3][3] = {{2, 4, 3}, {5, 2, 34}, {2, 3, 90}};
