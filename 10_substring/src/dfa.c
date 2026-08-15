@@ -1,6 +1,8 @@
 
 #include "dfa.h"
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 state_t is_friendly(const char *digits) {
   state_t state = state_new();
@@ -12,63 +14,64 @@ state_t is_friendly(const char *digits) {
 
 // initial state: empty string, nothing uncovered yet -> uncovered == 0 (z ==
 // true)
-state_t state_new(void) { return (state_t){0, 0}; }
+state_t state_new(void) { return (state_t){0, 0, 1}; }
 
 state_t state_next(state_t current, int digit) {
+  uint16_t next_F = 0, next_C = 0;
 
-  // bit r-1 of the mask means: some suffix has digit sum (10 - r) mod 10,
-  // i.e. r more digit-sum is needed to reach a positive multiple of 10.
-  // Such a promise completes exactly when the new digit equals that
-  // remaining sum (r == digit) -> the string becomes friendly.
-  bool completion = (digit > 0) && ((current.mask & (1 << (digit - 1))) != 0);
+  bool completion = (digit > 0) && (current.C & (1 << (digit - 1)));
 
-  state_t state_next;
-  state_next.mask = 0;
-
+  // update new C and F
   for (size_t r = 1; r <= 10; r++) {
-    if (current.mask & (1 << (r - 1))) {
-      if (r > digit) {
-        state_next.mask |= (1 << ((r - digit) - 1));
-      }
+    if (current.F & (1 << (r - 1)) && r > digit) {
+      next_F |= (1 << ((r - digit) - 1));
+    }
+    if (current.C & (1 << (r - 1)) && r > digit) {
+      next_C |= (1 << ((r - digit) - 1));
     }
   }
+
   int new_r = 10 - digit;
-  state_next.mask |= (1 << (new_r - 1));
-  // update uncovered counter: 0 == z (friendly), 11 == dead state
-  if (completion) {
-    state_next.uncovered = 0; // last digit completed a promise
-  } else if (current.uncovered < 11) {
-    state_next.uncovered = current.uncovered + 1; // one more uncovered digit
-  } else {
-    state_next.uncovered = 11; // capped at the dead state
+  next_F |= (1 << (new_r - 1));
+  if (current.fresh) {
+    next_C |= (1 << (new_r - 1));
   }
-  return state_next;
+  // coverage update -- no time counter needed: death is "C empty", which is
+  // implicit (dead states never become fresh again).
+  if (completion) {
+    next_C = next_F; // e jumped: every live suffix now starts before e
+    return (state_t){next_F, next_C, 1};
+  } else if (digit == 0 && current.fresh && current.F) {
+    // a zero extends the last covering block; the empty prefix (F == 0) has
+    // no covering block to extend, so "0" is not friendly
+    return (state_t){next_F, next_C, 1};
+  } else {
+    return (state_t){next_F, next_C, 0};
+  }
 }
 
 bool state_equal(state_t a, state_t b) {
-  if (a.mask == b.mask) {
-    if (a.uncovered == b.uncovered)
-      return true;
-  }
-  return false;
+  return a.F == b.F && a.C == b.C && a.fresh == b.fresh;
 }
 
-// TODO: test state_hash
-// injective over (mask, uncovered): mask (0..1023) x uncovered (0..11) ->
-// 0..12287
-uint32_t state_hash(state_t s) { return (uint32_t)s.mask * 12 + s.uncovered; }
+// injective over (F, C, fresh): F, C in 0..1023, fresh in 0..1 -> 0..2^21-1
+uint32_t state_hash(state_t s) {
+  return (uint32_t)s.F * 2048 + (uint32_t)s.C * 2 + s.fresh;
+}
+
+#define HASH_SPACE (1u << 21)
 
 int bfs_state(state_t *states_out) {
-  // perfect hash size: 1024 masks x 12 uncovered values -> 0..12287
-  bool visited[12288] = {false};
+  static uint8_t visited[HASH_SPACE >> 3]; // 2^21 hashes as a bit set
+  memset(visited, 0, sizeof(visited));
 
-  state_t queue[12288]; // safely holds all states
+  state_t queue[12288]; // safely holds all reachable states (6654)
   int head = 0, tail = 0;
   int count = 0;
 
   state_t start = state_new();
   uint32_t start_hash = state_hash(start);
-  visited[start_hash] = true;
+  visited[start_hash >> 3] |= (uint8_t)(1u << (start_hash & 7));
   queue[tail++] = start;
 
   while (head < tail) {
@@ -78,8 +81,8 @@ int bfs_state(state_t *states_out) {
     for (int d = 0; d <= 9; d++) {
       state_t nxt = state_next(cur, d);
       uint32_t h = state_hash(nxt);
-      if (!visited[h]) {
-        visited[h] = true;
+      if (!(visited[h >> 3] & (uint8_t)(1u << (h & 7)))) {
+        visited[h >> 3] |= (uint8_t)(1u << (h & 7));
         queue[tail++] = nxt;
       }
     }

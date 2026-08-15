@@ -4,11 +4,11 @@
 // now is finally the time to start working on matrix stuff --- :)
 
 int **construct_transition_matrix(state_t *possible_states, size_t count) {
-  // state_hash is injective over (mask, uncovered): mask (0..1023) x
-  // uncovered (0..11) -> 0..12287, so a plain array maps a state's hash
-  // directly to its position in the list -- no collision handling needed.
-  int hash_to_index[12288];
-  for (int h = 0; h < 12288; h++) {
+  // state_hash is injective over (F, C, fresh): F, C in 0..1023, fresh in 0..1
+  // -> 0..2^21-1, so a plain array maps a state's hash directly to its
+  // position in the list -- no collision handling needed.
+  int *hash_to_index = malloc((1u << 21) * sizeof(int));
+  for (size_t h = 0; h < (1u << 21); h++) {
     hash_to_index[h] = -1;
   }
   for (size_t i = 0; i < count; i++) {
@@ -28,6 +28,7 @@ int **construct_transition_matrix(state_t *possible_states, size_t count) {
         t_matrix[i][target] += 1;
     }
   }
+  free(hash_to_index);
   return t_matrix;
 }
 

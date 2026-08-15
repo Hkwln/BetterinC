@@ -1,0 +1,27 @@
+---
+:source:
+  :file: test/test_counter.c
+  :dirname: test
+  :basename: test_counter.c
+:successes:
+- :test: test_count_length
+  :line: 13
+  :message: ''
+  :unity_test_time: 0
+- :test: test_count_length_more
+  :line: 21
+  :message: ''
+  :unity_test_time: 0
+- :test: test_count_up_to
+  :line: 29
+  :message: ''
+  :unity_test_time: 0
+:failures: []
+:ignores: []
+:counts:
+  :total: 3
+  :passed: 3
+  :failed: 0
+  :ignored: 0
+:stdout: []
+:time: 1.0814655300000595

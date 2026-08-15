@@ -1,0 +1,27 @@
+---
+:source:
+  :file: test/test_dfa.c
+  :dirname: test
+  :basename: test_dfa.c
+:successes:
+- :test: test_is_friendly
+  :line: 13
+  :message: ''
+  :unity_test_time: 0
+- :test: test_logik_works
+  :line: 25
+  :message: ''
+  :unity_test_time: 0
+- :test: test_bfs_works
+  :line: 45
+  :message: ''
+  :unity_test_time: 0
+:failures: []
+:ignores: []
+:counts:
+  :total: 3
+  :passed: 3
+  :failed: 0
+  :ignored: 0
+:stdout: []
+:time: 0.03228966300002867

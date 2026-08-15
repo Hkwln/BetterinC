@@ -9,8 +9,8 @@
 unsigned long count_length(size_t L) {
   state_t *pos_stat = calloc(12288, sizeof(state_t));
   size_t N = bfs_state(pos_stat);
-  int hash_to_index[12288];
-  for (size_t b = 0; b < 12288; b++) {
+  int *hash_to_index = malloc((1u << 21) * sizeof(int));
+  for (size_t b = 0; b < (1u << 21); b++) {
     hash_to_index[b] = -1;
   }
   for (size_t b = 0; b < N; b++) {
@@ -52,12 +52,13 @@ unsigned long count_length(size_t L) {
 
   unsigned long result = 0;
   for (size_t k = 0; k < N; k++) {
-    if (pos_stat[k].uncovered == 0) {
+    if (pos_stat[k].fresh == 1) {
       result += v[k];
     }
   }
   free(pos_stat);
   free(new_v);
+  free(hash_to_index);
   return result;
 }
 
@@ -67,8 +68,8 @@ unsigned long count_length(size_t L) {
 unsigned long long count_up_to(size_t L) {
   state_t *out = calloc(12288, sizeof(state_t));
   size_t N = bfs_state(out);
-  int hash_to_index[12288];
-  for (size_t b = 0; b < 12288; b++) {
+  int *hash_to_index = malloc((1u << 21) * sizeof(int));
+  for (size_t b = 0; b < (1u << 21); b++) {
     hash_to_index[b] = -1;
   }
   for (size_t b = 0; b < N; b++) {
@@ -91,7 +92,7 @@ unsigned long long count_up_to(size_t L) {
   for (size_t i = 1; i <= L; i++) {
     // count_length(i) = accepting sum of v
     for (size_t k = 0; k < N; k++) {
-      if (out[k].uncovered == 0) {
+      if (out[k].fresh == 1) {
         result += v[k];
       }
     }
@@ -108,5 +109,6 @@ unsigned long long count_up_to(size_t L) {
     }
   }
   free(out);
+  free(hash_to_index);
   return result;
 }

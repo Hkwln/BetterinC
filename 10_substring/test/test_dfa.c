@@ -11,49 +11,44 @@ void setUp(void) {}
 void tearDown(void) {}
 
 void test_is_friendly(void) {
-  TEST_ASSERT_FALSE(is_friendly("9").uncovered == 0);
-  TEST_ASSERT_FALSE(is_friendly("100").uncovered == 0);
-  TEST_ASSERT_FALSE(is_friendly("0").uncovered == 0);
-  TEST_ASSERT_FALSE(is_friendly("111111111").uncovered == 0);
-  TEST_ASSERT_FALSE(is_friendly("19819").uncovered == 0);
-  TEST_ASSERT_TRUE(is_friendly("19").uncovered == 0);
-  TEST_ASSERT_TRUE(is_friendly("3523014").uncovered == 0);
-  TEST_ASSERT_TRUE(is_friendly("1919").uncovered == 0);
-  TEST_ASSERT_TRUE(is_friendly("195482").uncovered == 0);
+  TEST_ASSERT_FALSE(is_friendly("9").fresh == 1);
+  TEST_ASSERT_FALSE(is_friendly("100").fresh == 1);
+  TEST_ASSERT_FALSE(is_friendly("0").fresh == 1);
+  TEST_ASSERT_FALSE(is_friendly("111111111").fresh == 1);
+  TEST_ASSERT_FALSE(is_friendly("19819").fresh == 1);
+  TEST_ASSERT_TRUE(is_friendly("19").fresh == 1);
+  TEST_ASSERT_TRUE(is_friendly("3523014").fresh == 1);
+  TEST_ASSERT_TRUE(is_friendly("1919").fresh == 1);
+  TEST_ASSERT_FALSE(is_friendly("195482").fresh == 1);
 }
 
 void test_logik_works(void) {
   state_t test1 = state_new();
-#ifdef verbose
-  printf("mask=%d, uncovered=%b\n", test1.mask, test1.uncovered);
-#endif
-  TEST_ASSERT_EQUAL_INT(test1.mask, 0);
-  TEST_ASSERT_TRUE(test1.uncovered == 0);
+  TEST_ASSERT_EQUAL_INT(test1.F, 0);
+  TEST_ASSERT_EQUAL_INT(test1.C, 0);
+  TEST_ASSERT_TRUE(test1.fresh);
+
+  // "1": promise r=9 (bit 8 = 256) in both F and C; nothing covered yet
   state_t next = state_next(test1, 1);
-#ifdef verbose
-  printf("mask= %d(256 expected), uncovered=%b\n", next.mask, next.uncovered);
-#endif
-  TEST_ASSERT_EQUAL_INT(next.mask, 256);
-  TEST_ASSERT_FALSE(next.uncovered == 0);
-  next = state_next((state_t){256, 0}, 9);
-#ifdef verbose
-  printf("mask=%d, uncovered=%b\n", next.mask, next.uncovered);
-#endif
-  TEST_ASSERT_EQUAL_INT(next.mask, 1);
-  TEST_ASSERT_TRUE(next.uncovered == 0);
-  TEST_ASSERT_TRUE(state_equal(next, (state_t){1, 0}));
+  TEST_ASSERT_EQUAL_INT(next.F, 256);
+  TEST_ASSERT_EQUAL_INT(next.C, 256);
+  TEST_ASSERT_FALSE(next.fresh);
+
+  // "9" completes the r=9 promise -> "19" fully covered
+  next = state_next((state_t){256, 256, 0}, 9);
+  TEST_ASSERT_EQUAL_INT(next.F, 1);
+  TEST_ASSERT_EQUAL_INT(next.C, 1);
+  TEST_ASSERT_TRUE(next.fresh);
+  TEST_ASSERT_TRUE(state_equal(next, (state_t){1, 1, 1}));
 }
 
 void test_bfs_works(void) {
-  // max possible distinct (mask, uncovered) states: 1024 masks x 12 uncovered
+  // the new (F, C, fresh) automaton has 6654 reachable states
   size_t size = 12288;
   state_t *state_out = malloc(size * sizeof(state_t));
   TEST_ASSERT_NOT_NULL(state_out);
   int num = bfs_state(state_out);
-#ifdef verbose
-  printf("%d\n", num);
-#endif
-  TEST_ASSERT_EQUAL_INT(num, 11765);
+  TEST_ASSERT_EQUAL_INT(num, 6654);
   free(state_out);
 }
 #endif // TEST

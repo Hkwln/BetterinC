@@ -28,7 +28,9 @@ void test_matrix_matches_reference(void) {
   state_t *states = malloc(12288 * sizeof(state_t));
   int n = bfs_state(states);
 
-  int h2i[12288];
+  int *h2i = malloc((1u << 21) * sizeof(int));
+  for (size_t h = 0; h < (1u << 21); h++)
+    h2i[h] = -1;
   for (int i = 0; i < n; i++)
     h2i[state_hash(states[i])] = i;
 
@@ -50,6 +52,7 @@ void test_matrix_matches_reference(void) {
   }
   free(M);
   free(states);
+  free(h2i);
 }
 void test_matrix_multiplication(void) {
 

@@ -1,0 +1,59 @@
+---
+:source:
+  :file: test/test_recur.c
+  :dirname: test
+  :basename: test_recur.c
+:successes:
+- :test: test_bm_zero_sequence
+  :line: 43
+  :message: ''
+  :unity_test_time: 0
+- :test: test_bm_constant
+  :line: 48
+  :message: ''
+  :unity_test_time: 0
+- :test: test_bm_geometric
+  :line: 54
+  :message: ''
+  :unity_test_time: 0
+- :test: test_bm_arithmetic
+  :line: 60
+  :message: ''
+  :unity_test_time: 0
+- :test: test_bm_fibonacci
+  :line: 66
+  :message: ''
+  :unity_test_time: 0
+- :test: test_bm_order3
+  :line: 72
+  :message: ''
+  :unity_test_time: 0
+- :test: test_kitamasa_fibonacci
+  :line: 86
+  :message: ''
+  :unity_test_time: 0
+- :test: test_kitamasa_order3
+  :line: 95
+  :message: ''
+  :unity_test_time: 0
+- :test: test_kitamasa_small_n
+  :line: 105
+  :message: ''
+  :unity_test_time: 0
+- :test: test_kitamasa_order_zero
+  :line: 115
+  :message: ''
+  :unity_test_time: 0
+- :test: test_bm_to_kitamasa_bridge
+  :line: 121
+  :message: ''
+  :unity_test_time: 0
+:failures: []
+:ignores: []
+:counts:
+  :total: 11
+  :passed: 11
+  :failed: 0
+  :ignored: 0
+:stdout: []
+:time: 0.035468567999942024

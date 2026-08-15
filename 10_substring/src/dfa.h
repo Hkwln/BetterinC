@@ -6,8 +6,10 @@
 #include <stdio.h>
 
 typedef struct {
-  uint16_t mask;     // only bits 0...9 used;
-  uint8_t uncovered; // if uncovered == 0 z = true
+  uint16_t F; // only bits 0...9 used;
+  uint16_t C; // a secound bitmask, which captures old not finished promises --
+              // only if both mask and C finished uncovered outputs true
+  uint8_t fresh;
 } state_t;
 
 state_t is_friendly(const char *digits);
