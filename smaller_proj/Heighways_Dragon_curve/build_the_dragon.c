@@ -16,10 +16,10 @@ char *create_l_syst(size_t n_generations) {
     for (size_t b = 0; b < strlen(start); b++) {
       switch (start[b]) {
       case 'f':
-        strcat(tmp, "f-h");
+        strcat(tmp, "f+h");
         break;
       case 'h':
-        strcat(tmp, "f+h");
+        strcat(tmp, "f-h");
         break;
       default:
         len = strlen(tmp);
@@ -31,6 +31,36 @@ char *create_l_syst(size_t n_generations) {
   }
   free(tmp);
   return start;
+}
+
+char dragon_turn_at(size_t i) {
+  size_t odd = i + 1;
+  while ((odd & 1u) == 0)
+    odd >>= 1; // strip the factors of two -> odd part of (i+1)
+  return ((odd & 3u) == 3u) ? '+' : '-';
+}
+
+char dragon_symbol_at(size_t pos, size_t n_generations) {
+  if (n_generations >= 63 || pos >= ((1ULL << (n_generations + 1)) - 1))
+    return '\0';
+  if ((pos & 1u) == 0) // forward symbol: 'f','h' alternate
+    return (((pos >> 1) & 1u) == 0) ? 'f' : 'h';
+  return dragon_turn_at((pos - 1) / 2);
+}
+
+bool test_streaming_matches_string(void) {
+  for (size_t n = 2; n <= 12; n++) {
+    char *s = create_l_syst(n);
+    for (size_t pos = 0; s[pos]; pos++) {
+      if (dragon_symbol_at(pos, n) != s[pos]) {
+        free(s);
+        fprintf(stderr, "streaming mismatch at n=%zu pos=%zu\n", n, pos);
+        return false;
+      }
+    }
+    free(s);
+  }
+  return true;
 }
 
 bool test_create_l_system(void) {
@@ -53,10 +83,13 @@ bool test_create_l_system(void) {
   free(start);
   return res;
 }
-#if 0
+#ifdef DRAGON_TEST
 int main(void) {
-
-  test_create_l_system() ? printf("all test passed\n")
-                         : fprintf(stderr, "test did not pass\n");
+  bool ok = test_create_l_system() && test_streaming_matches_string();
+  if (ok)
+    printf("all tests passed\n");
+  else
+    fprintf(stderr, "test did not pass\n");
+  return ok ? 0 : 1;
 }
 #endif
